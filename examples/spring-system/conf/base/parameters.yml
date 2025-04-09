@@ -1,0 +1,32 @@
+## Spring System Case Study
+split_data:
+  random_state: 0
+  train_size: 0.8
+
+xform_data:
+  data_xform: std_pca
+  random_state: 0
+
+basic_trainer:
+  model: lr
+  random_state: 0
+
+score:
+  plot: regression
+
+get_data:
+  noise: "gaussian"
+  N: 100
+  T: 1000
+  F: 1
+  data_xform: "dEps_dK"
+  test_T: 1
+
+get_data_test:
+  noise: "gaussian"
+  N: 100
+  T: 1
+  F: 1
+  data_xform: "dEps_dK"
+
+fmu_path: "data/06_models/dynamic_fmu/dynamicFMU.fmu/DynamicFMU.fmu"

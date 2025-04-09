@@ -1,0 +1,47 @@
+fmu_path: "data/06_models/dynamic_fmu/dynamicFMU.fmu/DynamicFMU.fmu"
+
+dual_code:
+  data_xform: std_pca
+
+split_data:
+  random_state: 0
+  train_size: 0.8
+
+xform_X: 
+  data_xform: std_pca
+  random_state: 0
+
+xform_Y:
+  data_xform: std_pca
+  random_state: 0
+
+trainer:
+  model: mlp
+  random_state: 0
+
+#
+# PyTorch + sensitivity version 
+#
+t_xform_X: 
+  data_xform: std_pca
+  random_state: 0
+  to_torch: true
+
+t_xform_Y:
+  data_xform: std_pca
+  random_state: 0
+  to_torch: true
+
+t_trainer:
+  model: pytorch
+  random_state: 0
+  max_iter: 1000
+
+score:
+  plot: regression
+
+sensitivity:
+  num_sample: 2  # number of samples to perform sensitivity analysis
+  target: 0
+  diff_step: 10
+  grid_size: 1000

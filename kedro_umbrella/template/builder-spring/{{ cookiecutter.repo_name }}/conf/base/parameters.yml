@@ -1,0 +1,13 @@
+## Spring System Case Study
+train_fraction: 0.8
+random_state: 0
+data_xform: std_pca
+model: lr
+get_data:
+  noise: "gaussian"
+  N: 100
+  T: 1000
+  F: 1
+  data_xform: "dEps_dK"
+  test_T: 1
+fmu_path: "data/06_models/dynamic_fmu/dynamicFMU.fmu/DynamicFMU.fmu"

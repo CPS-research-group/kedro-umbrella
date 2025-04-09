@@ -1,0 +1,30 @@
+build/
+kedro_umbrella.egg-info/
+.pytest_cache
+.vscode
+__pycache__
+
+cetim
+kedro
+install
+.coverage*
+coverage.xml
+pkg_dir
+SOURCEME
+
+# XXX hacky type info
+types.pickle
+
+# ignore everything in the following folders
+DATA/**
+
+# except their sub-folders
+!DATA/**/
+
+# also keep all .gitkeep files
+!.gitkeep
+
+# AutoGluon generated files
+**/AutogluonModels
+
+.pkg_dir
