@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from dataclasses import dataclass
 
 
 logger = logging.getLogger(__name__)
@@ -15,12 +16,19 @@ def _make_deterministic(random_state):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+@dataclass
+class InputStats:
+    size: int
+    mean: np.ndarray
+    std: np.ndarray
+
 # Define the neural network architecture
 class Regressor(nn.Module):
-    def __init__(self, input_size, hidden_sizes, output_size):
+    def __init__(self, input_stats: InputStats, hidden_sizes, output_size):
         super(Regressor, self).__init__()
+        self.input_stats = input_stats
         self.hidden_layers = nn.ModuleList()
-        self.hidden_layers.append(nn.Linear(input_size, hidden_sizes[0]))
+        self.hidden_layers.append(nn.Linear(self.input_stats.size, hidden_sizes[0]))
         for i in range(len(hidden_sizes) - 1):
             self.hidden_layers.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
         self.output_layer = nn.Linear(hidden_sizes[-1], output_size)
@@ -66,8 +74,19 @@ def pytorch_trainer(X, Y, parameters):
     max_iter=parameters.get("max_iter", 50000)
     learning_rate = parameters.get("learning_rate_init", 0.001)
 
+    # Convert data to torch tensors if not already
+    if not isinstance(X, torch.Tensor):
+        X = torch.tensor(X, dtype=torch.float32)
+    if not isinstance(Y, torch.Tensor):
+        Y = torch.tensor(Y, dtype=torch.float32)
+
     # Init model
-    model = Regressor(X.shape[1], hidden_sizes, Y.shape[1])
+    input_stats = InputStats(
+        size=X.shape[1],
+        mean=np.array([X.mean().abs().floor().numpy()] * X.shape[1]),
+        std=np.array([X.std().abs().floor().numpy()] * X.shape[1])
+    )
+    model = Regressor(input_stats, hidden_sizes, Y.shape[1])
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), 
                            lr=learning_rate,
@@ -76,12 +95,6 @@ def pytorch_trainer(X, Y, parameters):
 
     logger.info(f"Training model {model} with parameters: {parameters}")
 
-    # Convert data to torch tensors if not already
-    if not isinstance(X, torch.Tensor):
-        X = torch.tensor(X, dtype=torch.float32)
-    if not isinstance(Y, torch.Tensor):
-        Y = torch.tensor(Y, dtype=torch.float32)
-    
     # Training loop
     max_iter = max_iter
     model.train(True)

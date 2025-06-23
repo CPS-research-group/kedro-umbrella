@@ -4,7 +4,7 @@ import numpy as np
 import captum
 import matplotlib.pyplot as plt
 from .utils import ReportDir
-
+from .pytorch_train import Regressor
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +266,7 @@ def _get_max_diff_values(dataset, diff_grid, diff_pos, out):
 
     return x1, x2, y1, y2
 
-def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
+def eval_sensitive_features_grid(model: Regressor, attr_div, random_div, top_samples_div):
     """
     Step 3: Vary the 2 most-sensitive features in a grid and fix the remaining features
 
@@ -302,21 +302,21 @@ def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
         fixed_feat = feat_imp[2:]
         vary_feat = feat_imp[:2]  # the first two most imp.
         feat1 = np.linspace(
-            model.LOW[vary_feat[0]], model.HIGH[vary_feat[0]], GRID_SIZE
+            model.input_stats.mean[vary_feat[0]], model.input_stats.std[vary_feat[0]], GRID_SIZE
         )
         feat2 = np.linspace(
-            model.LOW[vary_feat[1]], model.HIGH[vary_feat[1]], GRID_SIZE
+            model.input_stats.mean[vary_feat[1]], model.input_stats.std[vary_feat[1]], GRID_SIZE
         )
         grid_0, grid_1 = np.meshgrid(feat1, feat2)
 
         # Create the dataset w/ fixed feat and varying features
-        dataset = np.zeros((GRID_SIZE * GRID_SIZE, model.NUM_FEATURES))
+        dataset = np.zeros((GRID_SIZE * GRID_SIZE, model.input_stats.size))
         dataset[:, fixed_feat] = random_div[sample_idx][list(fixed_feat)]
         dataset[:, vary_feat] = np.vstack((grid_0.flatten(), grid_1.flatten())).T
         dataset_tensor = torch.tensor(dataset, dtype=torch.float32)
 
         # Calculate model output
-        out = model.model(dataset_tensor)
+        out = model(dataset_tensor)
         if out.dim() == 1:
             out_reshape = out.detach().numpy().reshape(GRID_SIZE, GRID_SIZE)
         else:
@@ -335,7 +335,7 @@ def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
 
         # TODO watch-out these weird reshapes
         x1, x2, y1, y2 = _get_max_diff_values(
-            dataset.reshape((GRID_SIZE, GRID_SIZE, model.NUM_FEATURES)),
+            dataset.reshape((GRID_SIZE, GRID_SIZE, model.input_stats.size)),
             diff_grid, 
             diff_pos, 
             out.detach().numpy().reshape((GRID_SIZE, GRID_SIZE, out.shape[1])))
@@ -344,7 +344,7 @@ def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
 
 
 def focus_around_top_samples(
-    model, attributions, random_tensor, top_samples_idx, method="ig"
+    model: Regressor, attributions, random_tensor, top_samples_idx, method="ig"
 ):
     """
     Step 2: Focus around each of the top-N important samples.
@@ -375,16 +375,16 @@ def focus_around_top_samples(
         logger.info(f"Feature importance for sample {sample_idx}: {feat_imp}")
 
         query_min, query_max = compute_query_range(
-            top_sample, a_min=model.LOW, a_max=model.HIGH, divide=10
+            top_sample, a_min=model.input_stats.mean, a_max=model.input_stats.std, divide=10
         )
         logger.info(f"Query range: [{query_min}, {query_max}]")
 
         # attributions on the divided range
         attr_div, random_div = find_most_sensitive_feature(
-            model.model,
+            model,
             low=query_min,
             high=query_max,
-            num_features=model.NUM_FEATURES,
+            num_features=model.input_stats.size,
             target=TARGET,
             method=method,
             num_sample=GRID_SIZE,
@@ -402,7 +402,7 @@ def focus_around_top_samples(
     return all_res
 
 
-def calculate_top_samples(model, method="ig"):
+def calculate_top_samples(model: Regressor, method="ig"):
     """
     Step 1: Determine the top-N important samples
     @in:
@@ -414,10 +414,10 @@ def calculate_top_samples(model, method="ig"):
     """
     logger.info(f"\n# Step 1: Determine the top-{NUM_SAMPLE} important samples")
     attributions, random_tensor = find_most_sensitive_feature(
-        model.model,
-        low=model.LOW,
-        high=model.HIGH,
-        num_features=model.NUM_FEATURES,
+        model,
+        low=model.input_stats.mean,
+        high=model.input_stats.std,
+        num_features=model.input_stats.size,
         target=TARGET,
         method=method,
         num_sample=GRID_SIZE,
@@ -448,7 +448,7 @@ def set_parameters(params):
     logger.info(f"GRID_SIZE: {GRID_SIZE}")
     logger.info(f"REPORT_DIR: {REPORT_DIR}")
 
-def sensitivity_analysis(model_, parameters):
+def sensitivity_analysis(model: Regressor, parameters):
     """
     Perform sensitivity analysis on a given model with specified parameters. 
     
@@ -476,11 +476,7 @@ def sensitivity_analysis(model_, parameters):
     Typing partition: 
         P1 = {model}
     """
-
     set_parameters(parameters)
-
-    # TODO make it more generic or part of the librarym for FDF
-    model = Model(model_)
 
     # Step 1: Determine the top-N important samples
     attributions, random_tensor, top_samples_idx = calculate_top_samples(model)
@@ -490,19 +486,3 @@ def sensitivity_analysis(model_, parameters):
                              top_samples_idx)
 
     return res.x1, res.x2, res.y1, res.y2
-
-
-class Model:
-    # XXX this works only for the cetim case
-    NUM_FEATURES = 10  # number of features of model
-    LOW = np.array([0] * NUM_FEATURES)  # lowest value of input space x
-    HIGH = np.array([16] * NUM_FEATURES)  # highest value of input space x
-
-    def __init__(self, regressor):
-        self.model = regressor
-
-    def __call__(self, x):
-        return self.model(x)
-
-    def has_project_back_to_full_space(self):
-        return False
