@@ -24,21 +24,33 @@ class InputStats:
 
 # Define the neural network architecture
 class Regressor(nn.Module):
-    def __init__(self, input_stats: InputStats, hidden_sizes, output_size):
+    def __init__(self, input_stats: InputStats, hidden_sizes, output_size, use_lstm=False):
         super(Regressor, self).__init__()
         self.input_stats = input_stats
-        self.hidden_layers = nn.ModuleList()
-        self.hidden_layers.append(nn.Linear(self.input_stats.size, hidden_sizes[0]))
-        for i in range(len(hidden_sizes) - 1):
-            self.hidden_layers.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
-        self.output_layer = nn.Linear(hidden_sizes[-1], output_size)
+        self.use_lstm = use_lstm
+        if self.use_lstm:
+            self.lstm = nn.LSTM(input_size=self.input_stats.size,
+                    hidden_size=hidden_sizes[0], num_layers=len(hidden_sizes),
+                    batch_first=True)
+            self.output_layer = nn.Linear(hidden_sizes[-1], output_size)
+        else:
+            self.hidden_layers = nn.ModuleList()
+            self.hidden_layers.append(nn.Linear(self.input_stats.size, hidden_sizes[0]))
+            for i in range(len(hidden_sizes) - 1):
+                self.hidden_layers.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
+            self.output_layer = nn.Linear(hidden_sizes[-1], output_size)
     
     def forward(self, x):
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(x, dtype=torch.float32)
-    
-        for layer in self.hidden_layers:
-            x = torch.relu(layer(x))
+
+        if self.use_lstm:
+            x = x.unsqueeze(0)  # Add batch dimension for LSTM
+            x, _ = self.lstm(x)
+            x = x.squeeze(0)  # Remove batch dimension
+        else:
+            for layer in self.hidden_layers:
+                x = torch.relu(layer(x))
         x = self.output_layer(x)
         return x
     
@@ -63,6 +75,7 @@ def pytorch_trainer(X, Y, parameters):
             - "hidden_layer_sizes" (tuple, optional): Sizes of hidden layers. Default is (50, 50).
             - "max_iter" (int, optional): Maximum number of training iterations. Default is 50000.
             - "learning_rate_init" (float, optional): Initial learning rate. Default is 0.001.
+            - "use_lstm" (bool, optional): Whether to use LSTM layers. Default is False.
     
     Returns:
         torch.nn.Module: Trained PyTorch model with gradients disabled. It can be used to make predictions on the trained model. 
@@ -73,6 +86,7 @@ def pytorch_trainer(X, Y, parameters):
     hidden_sizes = parameters.get("hidden_layer_sizes", (50, 50))
     max_iter=parameters.get("max_iter", 50000)
     learning_rate = parameters.get("learning_rate_init", 0.001)
+    use_lstm = parameters.get("use_lstm", False)
 
     # Convert data to torch tensors if not already
     if not isinstance(X, torch.Tensor):
@@ -86,7 +100,7 @@ def pytorch_trainer(X, Y, parameters):
         mean=np.array([X.mean().abs().floor().numpy()] * X.shape[1]),
         std=np.array([X.std().abs().floor().numpy()] * X.shape[1])
     )
-    model = Regressor(input_stats, hidden_sizes, Y.shape[1])
+    model = Regressor(input_stats, hidden_sizes, Y.shape[1], use_lstm=use_lstm)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), 
                            lr=learning_rate,
