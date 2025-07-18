@@ -74,7 +74,7 @@ def pytorch_trainer(X, Y, parameters):
             - "random_state" (int, optional): Seed for random number generation.
             - "hidden_layer_sizes" (tuple, optional): Sizes of hidden layers. Default is (50, 50).
             - "max_iter" (int, optional): Maximum number of training iterations. Default is 50000.
-            - "learning_rate_init" (float, optional): Initial learning rate. Default is 0.001.
+            - "learning_rate" (float, optional): Learning rate. Default is 0.001.
             - "use_lstm" (bool, optional): Whether to use LSTM layers. Default is False.
     
     Returns:
@@ -85,7 +85,7 @@ def pytorch_trainer(X, Y, parameters):
     _make_deterministic(parameters.get("random_state", None))
     hidden_sizes = parameters.get("hidden_layer_sizes", (50, 50))
     max_iter=parameters.get("max_iter", 50000)
-    learning_rate = parameters.get("learning_rate_init", 0.001)
+    learning_rate = parameters.get("learning_rate", 0.001)
     use_lstm = parameters.get("use_lstm", False)
 
     # Convert data to torch tensors if not already
