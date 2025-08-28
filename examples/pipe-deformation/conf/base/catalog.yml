@@ -34,3 +34,7 @@ Y_inv_xform:
 regressor:
   type: pickle.PickleDataset
   filepath: data/06_models/regressor.pickle
+
+comp_model:
+  type: pickle.PickleDataset
+  filepath: data/06_models/comp_model.pickle

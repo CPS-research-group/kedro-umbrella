@@ -7,13 +7,22 @@ from kedro.pipeline.node import Node
 from kedro_umbrella.types import *
 from kedro.pipeline.modular_pipeline import _is_parameter
 
-def the_composer(*functions: Callable) -> Callable:
-    def composed(input_):
+
+class ComposedFunction:
+    def __init__(self, *functions: Callable):
+        if not functions:
+            raise ValueError("ComposedFunctions requires at least one function")
+        # store a flat list of callables
+        self.functions: list[Callable] = list(functions)
+
+    def __call__(self, input_):
         result = input_
-        for function in functions:
+        for function in self.functions:
             result = function(result)
         return result
-    return composed
+
+def the_composer(*functions: Callable) -> Callable:
+    return ComposedFunction(*functions)
 
 class Composer(Node):
     """``Composer`` is an extension of Node to compose function 
