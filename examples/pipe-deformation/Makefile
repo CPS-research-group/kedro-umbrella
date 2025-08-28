@@ -23,6 +23,11 @@ pipeline_sensitivity:
 	cd src/pipe_deformation && ln -sf pipeline_sensitivity.py pipeline.py
 	kedro run
 
+pipeline_compose:
+	$(call clean)
+	cd src/pipe_deformation && ln -sf pipeline_compose.py pipeline.py
+	kedro run
+
 pipeline_type_ko:
 	$(call clean)
 	cd src/pipe_deformation && ln -sf pipeline_type_error.py pipeline.py
