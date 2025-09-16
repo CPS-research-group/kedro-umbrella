@@ -4,6 +4,7 @@ mat73==0.62
 numpy==1.23.5
 pandas==2.2.2
 scikit-learn==1.4.0
+onnx==1.17.0
 
 # FMU libs
 fmpy==0.3.18

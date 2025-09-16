@@ -1,6 +1,9 @@
 install:
 	pip install .
 
+build:
+	python -m build
+
 lint:
 	pre-commit run --files ./kedro_umbrella/* --hook-stage manual $(hook)
 
@@ -25,5 +28,8 @@ clean:
 docs:
 	sphinx-apidoc -o docs/source/ kedro_umbrella
 	cd docs && make html
+
+update_test_pypi:
+	python3 -m twine upload --repository testpypi dist/
 
 .PHONY: examples install lint unit-tests docs

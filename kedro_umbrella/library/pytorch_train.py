@@ -19,12 +19,13 @@ def _make_deterministic(random_state):
 class Regressor(nn.Module):
     def __init__(self, input_size, hidden_sizes, output_size):
         super(Regressor, self).__init__()
+        self.input_size = input_size
         self.hidden_layers = nn.ModuleList()
         self.hidden_layers.append(nn.Linear(input_size, hidden_sizes[0]))
         for i in range(len(hidden_sizes) - 1):
             self.hidden_layers.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
         self.output_layer = nn.Linear(hidden_sizes[-1], output_size)
-    
+
     def forward(self, x):
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(x, dtype=torch.float32)
@@ -43,7 +44,11 @@ class Regressor(nn.Module):
     
     
 
-def pytorch_trainer(X, Y, parameters):
+def pytorch_trainer(
+    X: np.ndarray | torch.Tensor, 
+    Y: np.ndarray | torch.Tensor, 
+    parameters: dict
+) -> torch.nn.Module:
     """
     Trains a PyTorch model using the provided input data and parameters.
 

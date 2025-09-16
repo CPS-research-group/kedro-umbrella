@@ -40,6 +40,49 @@ class Result:
     def __repr__(self) -> str:
         return self.__str__()
 
+class Model:
+    nb = 0
+
+    def __init__(self, regressor: torch.nn.Module, X_inv_xform, Y_inv_xform, params):
+        self.model = regressor
+        if X_inv_xform and Y_inv_xform:
+            self.X_inv_xform = X_inv_xform
+            self.Y_inv_xform = Y_inv_xform
+        self.NUM_FEATURES = params['NUM_FEATURES']
+        self.LOW = np.array(params['LOW'])
+        self.HIGH = np.array(params['HIGH'])
+
+    def __call__(self, x):
+        return self.model(x)
+
+    def project_back_to_full_space(self, x1, x2, y1, y2):
+        """
+        Project back to the original point in the physics model
+        """
+        if (not self.X_inv_xform) or (not self.Y_inv_xform):
+            return 
+
+        Model.nb += 1
+
+
+        logger.info("Projecting back to full space...")
+        # Get values in full space
+        x1_f = self.X_inv_xform(x1.reshape(1, -1))
+        x2_f = self.X_inv_xform(x2.reshape(1, -1))
+        y1_f = self.Y_inv_xform(y1.reshape(1, -1))
+        y2_f = self.Y_inv_xform(y2.reshape(1, -1))
+
+        from scipy.io import savemat
+        savemat(
+            f"{REPORT_DIR}/sample_high_sens_{Model.nb}.mat",
+            {
+                "x1_f": x1_f,
+                "x2_f": x2_f,
+                "y1_f": y1_f,
+                "y2_f": y2_f,
+            },
+        )
+
 def find_most_sensitive_feature(
     model, low, high, num_features, target=0, method="kernel-shap", num_sample=100
 ):
@@ -225,7 +268,7 @@ def init_incr_static_cnt(function):
 def _get_max_diff_values(dataset, diff_grid, diff_pos, out):
     """
     Get the maximum difference values from the dataset and output arrays.
-    Identifies elements with maximum differencr and retrieves corresponding 
+    Identifies elements with maximum difference and retrieves corresponding 
     values from the dataset and output arrays.
     
     Args:
@@ -266,7 +309,7 @@ def _get_max_diff_values(dataset, diff_grid, diff_pos, out):
 
     return x1, x2, y1, y2
 
-def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
+def eval_sensitive_features_grid(model: Model, attr_div, random_div, top_samples_div):
     """
     Step 3: Vary the 2 most-sensitive features in a grid and fix the remaining features
 
@@ -340,6 +383,8 @@ def eval_sensitive_features_grid(model, attr_div, random_div, top_samples_div):
             diff_pos, 
             out.detach().numpy().reshape((GRID_SIZE, GRID_SIZE, out.shape[1])))
         res.extend(Result(x1, x2, y1, y2))
+
+        model.project_back_to_full_space(x1, x2, y1, y2)
     return res
 
 
@@ -448,7 +493,8 @@ def set_parameters(params):
     logger.info(f"GRID_SIZE: {GRID_SIZE}")
     logger.info(f"REPORT_DIR: {REPORT_DIR}")
 
-def sensitivity_analysis(model_, parameters):
+def sensitivity_analysis(model_: torch.nn.Module,  X_inv_xform, Y_inv_xform, 
+                         parameters: dict):
     """
     Perform sensitivity analysis on a given model with specified parameters. 
     
@@ -463,8 +509,9 @@ def sensitivity_analysis(model_, parameters):
             - compute the Linf metric (absolute distance between points) and save those w/ the highest value 
     
     Args:
-        model_ (object): The model to be analyzed.
+        model_ (torch.nn.Module): The model to be analyzed.
         parameters (dict): A dictionary of parameters to set for the model.
+        X_inv_xform, Y_inv_xform: inverse transforms to project back to full space
     
     Returns:
         tuple: A tuple containing the results of the sensitivity analysis:
@@ -479,8 +526,7 @@ def sensitivity_analysis(model_, parameters):
 
     set_parameters(parameters)
 
-    # TODO make it more generic or part of the librarym for FDF
-    model = Model(model_)
+    model = Model(model_, X_inv_xform, Y_inv_xform, parameters)
 
     # Step 1: Determine the top-N important samples
     attributions, random_tensor, top_samples_idx = calculate_top_samples(model)
@@ -491,18 +537,3 @@ def sensitivity_analysis(model_, parameters):
 
     return res.x1, res.x2, res.y1, res.y2
 
-
-class Model:
-    # XXX this works only for the cetim case
-    NUM_FEATURES = 10  # number of features of model
-    LOW = np.array([0] * NUM_FEATURES)  # lowest value of input space x
-    HIGH = np.array([16] * NUM_FEATURES)  # highest value of input space x
-
-    def __init__(self, regressor):
-        self.model = regressor
-
-    def __call__(self, x):
-        return self.model(x)
-
-    def has_project_back_to_full_space(self):
-        return False

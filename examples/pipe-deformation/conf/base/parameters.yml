@@ -41,7 +41,10 @@ score:
   plot: regression
 
 sensitivity:
-  num_sample: 2  # number of samples to perform sensitivity analysis
+  num_sample: 1  # number of samples to perform sensitivity analysis
   target: 0
   diff_step: 10
   grid_size: 1000
+  NUM_FEATURES: 10  # number of features of model
+  LOW: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  HIGH: [16, 16, 16, 16, 16, 16, 16, 16, 16, 16]

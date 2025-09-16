@@ -61,8 +61,8 @@ def create_pipeline(**kwargs) -> Pipeline:
             processor(
                 func = sensitivity_analysis,
                 name = "sensitivity",
-                inputs=["model", "params:sensitivity"],
-                outputs = "top_samples_idx"
+                inputs=["model", "X_inv_xform", "Y_inv_xform", "params:sensitivity"],
+                outputs = "top_samples"
             )
         ]
     )
