@@ -45,9 +45,8 @@ class Model:
 
     def __init__(self, regressor: torch.nn.Module, X_inv_xform, Y_inv_xform, params):
         self.model = regressor
-        if X_inv_xform and Y_inv_xform:
-            self.X_inv_xform = X_inv_xform
-            self.Y_inv_xform = Y_inv_xform
+        self.X_inv_xform = X_inv_xform
+        self.Y_inv_xform = Y_inv_xform
         self.NUM_FEATURES = params['NUM_FEATURES']
         self.LOW = np.array(params['LOW'])
         self.HIGH = np.array(params['HIGH'])
@@ -493,8 +492,11 @@ def set_parameters(params):
     logger.info(f"GRID_SIZE: {GRID_SIZE}")
     logger.info(f"REPORT_DIR: {REPORT_DIR}")
 
-def sensitivity_analysis(model_: torch.nn.Module,  X_inv_xform, Y_inv_xform, 
-                         parameters: dict):
+# =================
+#      PUBLIC
+# =================
+def sensitivity_analysis_with_inv(model_: torch.nn.Module, 
+                                  X_inv_xform, Y_inv_xform, parameters: dict):
     """
     Perform sensitivity analysis on a given model with specified parameters. 
     
@@ -510,8 +512,9 @@ def sensitivity_analysis(model_: torch.nn.Module,  X_inv_xform, Y_inv_xform,
     
     Args:
         model_ (torch.nn.Module): The model to be analyzed.
-        parameters (dict): A dictionary of parameters to set for the model.
         X_inv_xform, Y_inv_xform: inverse transforms to project back to full space
+        parameters (dict): A dictionary of parameters to set for the model.
+
     
     Returns:
         tuple: A tuple containing the results of the sensitivity analysis:
@@ -523,7 +526,6 @@ def sensitivity_analysis(model_: torch.nn.Module,  X_inv_xform, Y_inv_xform,
     Typing partition: 
         P1 = {model}
     """
-
     set_parameters(parameters)
 
     model = Model(model_, X_inv_xform, Y_inv_xform, parameters)
@@ -537,3 +539,10 @@ def sensitivity_analysis(model_: torch.nn.Module,  X_inv_xform, Y_inv_xform,
 
     return res.x1, res.x2, res.y1, res.y2
 
+def sensitivity_analysis(model_: torch.nn.Module, parameters: dict):
+    """
+    See `sensitivity_analysis_with_inv` documentation.
+    """
+    return sensitivity_analysis_with_inv(model_, 
+                                         X_inv_xform=None, Y_inv_xform=None, 
+                                         parameters=parameters)
