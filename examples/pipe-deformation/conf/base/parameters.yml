@@ -1,5 +1,3 @@
-fmu_path: "data/06_models/dynamic_fmu/dynamicFMU.fmu/DynamicFMU.fmu"
-
 dual_code:
   data_xform: std_pca
 

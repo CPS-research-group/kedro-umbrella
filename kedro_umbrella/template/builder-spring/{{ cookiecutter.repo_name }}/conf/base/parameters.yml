@@ -10,4 +10,3 @@ get_data:
   F: 1
   data_xform: "dEps_dK"
   test_T: 1
-fmu_path: "data/06_models/dynamic_fmu/dynamicFMU.fmu/DynamicFMU.fmu"

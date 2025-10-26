@@ -23,9 +23,7 @@ class Trainer(Node):
         tags: str | Iterable[str] | None = None,
         confirms: str | list[str] | None = None,
         namespace: str = None,
-        numX: int = 1,
-        use_optuna: bool = False,
-        n_trials: int = 50,
+        numX: int = 1
     ):
         """Create a trainer in the pipeline by providing a function to be called
         along with variable names for inputs and/or outputs.
@@ -99,8 +97,6 @@ class Trainer(Node):
             )
         self.numX = numX
         self.numY = len(inputs) - numX
-        self.use_optuna = use_optuna
-        self.n_trials = n_trials
 
     def __repr__(self):  # pragma: no cover
         return (
@@ -121,8 +117,6 @@ class Trainer(Node):
             "tags": self._tags,
             "confirms": self._confirms,
             "numX": self.numX,
-            "use_optuna": self.use_optuna,
-            "n_trials": self.n_trials,
         }
         params.update(overwrite_params)
         return Trainer(**params)
@@ -222,8 +216,6 @@ def trainer(
     confirms: str | list[str] | None = None,
     namespace: str = None,
     numX: int = 1,
-    use_optuna: bool = False,
-    n_trials: int = 50,
 ) -> Trainer:
     """Create a trainer in the pipeline by providing a function to be called
     along with variable names for inputs and/or outputs.
@@ -263,6 +255,4 @@ def trainer(
         confirms=confirms,
         namespace=namespace,
         numX=numX,
-        use_optuna=use_optuna,
-        n_trials=n_trials,
     )
