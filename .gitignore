@@ -24,7 +24,5 @@ DATA/**
 # also keep all .gitkeep files
 !.gitkeep
 
-# AutoGluon generated files
-**/AutogluonModels
-
 .pkg_dir
+dist

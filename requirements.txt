@@ -2,17 +2,18 @@
 captum==0.7.0
 mat73==0.62
 numpy==1.23.5
+onnx==1.17.0
 pandas==2.2.2
 scikit-learn==1.4.0
-onnx==1.17.0
-
-# FMU libs
-fmpy==0.3.18
-pythonfmu3==0.1.11
+scipy==1.15.1
+torch==2.5.1
 
 # Infra libs
 black~=22.0
+click==8.1.8
 flake8>=3.7.9, <5.0
+fsspec==2023.12.2
+h5py==3.12.1
 ipython>=7.31.1, <8.0; python_version < '3.8'
 ipython~=8.10; python_version >= '3.8'
 isort~=5.0
@@ -21,6 +22,7 @@ jupyterlab~=3.0, <3.6.0
 jupyter~=1.0
 matplotlib==3.8.4
 nbstripout~=0.4
+pluggy==1.2.0
 pre-commit>=2.9.2
 pytest-cov~=3.0
 pytest-mock>=1.7.1, <2.0
@@ -31,25 +33,3 @@ setuptools==67.7.2
 kedro-datasets[pandas.CSVDataset]~=1.0
 kedro-viz~=10.1.0
 kedro==0.19.10
-
-# AutoML
-optuna==3.6.1
-neuromancer==1.5.1
-
-# XXX Neuromancer deps not pinned to version
-casadi==3.6.7
-cvxpy==1.6.0
-cvxpylayers==0.1.9
-dill==0.3.9
-graphviz==0.20.3
-lightning-utilities==0.11.9
-lightning==2.5.0.post0
-pyts==0.13.0
-scipy==1.15.1
-six==1.17.0
-toml==0.10.2
-torch==2.5.1
-torchdiffeq==0.2.5
-torchmetrics==1.6.1
-torchsde==0.2.6
-wandb==0.18.7

@@ -19,7 +19,7 @@ Here are instructions to install the library. Using a `conda` environment is hig
 # Clone repo
 git clone git@github.com:CPS-research-group/kedro-umbrella.git
 # Create development env
-conda create -n builder_dev python=3.10.8
+conda create -n builder_dev python=3.10
 conda activate builder_dev
 # Install library
 make install
