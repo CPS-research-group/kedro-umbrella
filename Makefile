@@ -1,5 +1,6 @@
+# Use CPU-only PyTorch
 install:
-	pip install .
+	pip install --extra-index-url https://download.pytorch.org/whl/cpu .
 
 build:
 	python -m build

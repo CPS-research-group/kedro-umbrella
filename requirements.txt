@@ -6,7 +6,7 @@ onnx==1.17.0
 pandas==2.2.2
 scikit-learn==1.4.0
 scipy==1.15.1
-torch==2.5.1
+torch==2.5.1+cpu
 
 # Infra libs
 black~=22.0
