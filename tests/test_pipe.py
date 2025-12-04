@@ -4,9 +4,7 @@ import pytest
 
 from kedro_umbrella import coder, processor, trainer
 from kedro_umbrella.types import TypeCatalog, DataType, FunctionType
-
-from kedro.pipeline import Pipeline, pipeline
-
+from kedro.pipeline import Pipeline
 from kedro.io import DataCatalog
 from kedro_umbrella.checker import SequentialChecker
 
@@ -27,7 +25,7 @@ def test_pipe():
     types.add_data("Y")
 
     # declare pipe
-    pipe = pipeline(
+    pipe = Pipeline(
         [
             coder(
                 func = one_in_one_out, 
@@ -57,13 +55,9 @@ def test_pipe():
     )
 
     catalog = DataCatalog()
-    catalog.add_feed_dict(
-        {
-            "X1": 1,
-            "X2": 2,
-            "Y": 10,
-        }
-    )
+    catalog["X1"] = 1
+    catalog["X2"] = 2
+    catalog["Y"] = 10
     
     SequentialChecker(types).run(pipe, catalog)
 

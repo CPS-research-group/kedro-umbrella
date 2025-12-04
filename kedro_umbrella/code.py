@@ -4,7 +4,7 @@
 from typing import Any, Callable, Iterable
 
 from kedro.pipeline.node import Node
-from kedro.pipeline.modular_pipeline import _is_parameter
+from kedro.pipeline.pipeline import _is_parameter
 from kedro_umbrella.types import *
 
 

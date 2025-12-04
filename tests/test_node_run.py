@@ -135,7 +135,7 @@ def test_processor():
     assert out2["dsOut"] == 42
 
     # copy processor
-    p1 = processor(["my_func", "dsIn"], "dsOut")
+    p1 = processor(name="test_proc", inputs=["my_func", "dsIn"], outputs="dsOut")
     p2 = p1._copy()
     assert p1 == p2
 

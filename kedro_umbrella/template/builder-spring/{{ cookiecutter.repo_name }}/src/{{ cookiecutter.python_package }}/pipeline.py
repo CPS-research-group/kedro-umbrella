@@ -1,13 +1,13 @@
-from kedro.pipeline import Pipeline, node, pipeline
+from kedro.pipeline import Pipeline, Node
 from kedro_umbrella import coder, processor, trainer
 from kedro_umbrella.library import *
 from .nodes import *
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
+    return Pipeline(
         [
             # Data Retrieval
-            node(
+            Node(
                 func=get_data,
                 inputs = "params:get_data",
                 outputs=["X", "Y"],

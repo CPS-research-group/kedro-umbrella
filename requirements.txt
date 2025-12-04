@@ -32,4 +32,4 @@ setuptools==67.7.2
 # Kedro
 kedro-datasets[pandas.CSVDataset]~=1.0
 kedro-viz~=10.1.0
-kedro==0.19.10
+kedro==1.0.0

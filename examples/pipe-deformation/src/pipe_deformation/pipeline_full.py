@@ -47,10 +47,10 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="regressor",
             ),
             # TESTING PIPELINE
-            processor(inputs=["X_xform", "X_test"], outputs="X_test_red"),
-            processor(inputs=["regressor", "X_test_red"],
+            processor(name="f_test_red", inputs=["X_xform", "X_test"], outputs="X_test_red"),
+            processor(name="f_test_pred", inputs=["regressor", "X_test_red"],
                       outputs="Y_pred_red"),
-            processor(inputs=["Y_inv_xform", "Y_pred_red"], outputs="Y_pred"),
+            processor(name="f_test_invred", inputs=["Y_inv_xform", "Y_pred_red"], outputs="Y_pred"),
             processor(
                 func=score,
                 name="score",

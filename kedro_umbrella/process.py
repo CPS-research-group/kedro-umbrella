@@ -6,7 +6,7 @@ from typing import Any, Iterable, Callable
 
 from kedro.pipeline.node import Node, _to_list, _get_readable_func_name
 from kedro_umbrella.types import *
-from kedro.pipeline.modular_pipeline import _is_parameter
+from kedro.pipeline.pipeline import _is_parameter
 from warnings import warn
 
 class Processor(Node):

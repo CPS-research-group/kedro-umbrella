@@ -104,7 +104,7 @@ def commands():
     callback=_split_load_versions,
 )
 @click.option("--pipeline", "-p", type=str, default=None, help=PIPELINE_ARG_HELP)
-@click.option("--namespace", "-ns", type=str, default=None, help=NAMESPACE_ARG_HELP)
+@click.option("--namespaces", "-ns", type=str, default=None, help=NAMESPACE_ARG_HELP)
 @click.option(
     "--config",
     "-c",
@@ -140,7 +140,7 @@ def check(
     config,
     conf_source,
     params,
-    namespace,
+    namespaces,
 ):
     """Run the pipeline."""
     from kedro_umbrella.types import TypeCatalog
@@ -151,7 +151,7 @@ def check(
     tuple_node_names = tuple(node_names)
 
     with KedroSession.create(
-        env=env, conf_source=conf_source, extra_params=params
+        env=env, conf_source=conf_source, runtime_params=params
     ) as session:
         session.run(
             tags=tuple_tags,
@@ -163,5 +163,5 @@ def check(
             to_outputs=to_outputs,
             load_versions=load_versions,
             pipeline_name=pipeline,
-            namespace=namespace,
+            namespaces=namespaces,
         )
