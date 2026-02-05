@@ -3,7 +3,7 @@ This is a boilerplate pipeline
 generated using Kedro 0.18.8
 """
 
-from kedro.pipeline import Pipeline, pipeline
+from kedro.pipeline import Pipeline
 from kedro_umbrella import coder, processor, trainer, composer
 from kedro_umbrella.library import *
 
@@ -13,7 +13,7 @@ from kedro_umbrella.library import *
 
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
+    return Pipeline(
         [
             # TRAINING PIPELINE
             processor(
@@ -51,7 +51,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["X_xform", "regressor", "Y_inv_xform"],
                 outputs="comp_model"
             ),
-            processor(inputs=["comp_model", "X_test"], outputs="Y_pred"),
+            processor(name="f_Y_pred", inputs=["comp_model", "X_test"], outputs="Y_pred"),
             processor(
                 func=score,
                 name="score",

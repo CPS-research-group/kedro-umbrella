@@ -6,7 +6,7 @@ onnx==1.17.0
 pandas==2.2.2
 scikit-learn==1.4.0
 scipy==1.15.1
-torch==2.5.1
+torch==2.5.1+cpu
 
 # Infra libs
 black~=22.0
@@ -32,4 +32,4 @@ setuptools==67.7.2
 # Kedro
 kedro-datasets[pandas.CSVDataset]~=1.0
 kedro-viz~=10.1.0
-kedro==0.19.10
+kedro==1.0.0

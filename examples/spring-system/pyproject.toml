@@ -1,7 +1,7 @@
 [tool.kedro]
 package_name = "spring_system"
 project_name = "spring-system"
-kedro_init_version = "0.19.10"
+kedro_init_version = "1.0.0"
 
 [tool.pytest.ini_options]
 addopts = """

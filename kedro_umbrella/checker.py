@@ -14,7 +14,7 @@ from pluggy import PluginManager
 
 from kedro_umbrella import Coder, Processor, Trainer
 from kedro_umbrella.types import TypeCatalog, DataType, FunctionType
-from kedro.pipeline.modular_pipeline import _is_parameter
+from kedro.pipeline.pipeline import _is_parameter
 
 def warn_on_fail(condition, message=""):
     from warnings import warn
@@ -62,7 +62,9 @@ class SequentialChecker(AbstractRunner):
         pipeline: Pipeline,
         catalog: DataCatalog,
         hook_manager: PluginManager = None,
-        session_id: str = None,
+        run_id: str = None,
+        only_missing_outputs: bool = False,
+        **kwargs,
     ) -> None:
         """Run the ``Pipeline`` using the datasets provided by ``catalog``
         and save results back to the same objects.
@@ -71,7 +73,7 @@ class SequentialChecker(AbstractRunner):
             pipeline: The ``Pipeline`` to run.
             catalog: The ``DataCatalog`` from which to fetch data.
             hook_manager: The ``PluginManager`` to activate hooks.
-            session_id: The id of the session.
+            run_id: The id of the session.
 
         Raises:
             ValueError: Raised when ``Pipeline`` inputs cannot be satisfied.
@@ -82,7 +84,6 @@ class SequentialChecker(AbstractRunner):
             by the node outputs.
 
         """
-        catalog = catalog.shallow_copy()
 
         # Check which datasets used in the pipeline are in the catalog or match
         # a pattern in the catalog
@@ -103,13 +104,13 @@ class SequentialChecker(AbstractRunner):
 
         # Create a default dataset for unregistered datasets
         for ds_name in unregistered_ds:
-            catalog.add(ds_name, self.create_default_data_set(ds_name))
+            catalog[ds_name] = self.create_default_data_set(ds_name)
 
         if self._is_async:
             self._logger.info(
                 "Asynchronous mode is enabled for loading and saving data"
             )
-        self._run(pipeline, catalog, hook_manager, session_id)
+        self._run(pipeline, catalog, hook_manager, run_id)
 
         self._logger.info("Pipeline execution completed successfully.")
 
@@ -118,7 +119,9 @@ class SequentialChecker(AbstractRunner):
         pipeline: Pipeline,
         catalog: DataCatalog,
         hook_manager: PluginManager,
-        session_id: str = None,
+        run_id: str = None,
+        only_missing_outputs: bool = False,
+        **kwargs,
     ) -> None:
         """The method implementing sequential pipeline running.
 
@@ -126,7 +129,7 @@ class SequentialChecker(AbstractRunner):
             pipeline: The ``Pipeline`` to run.
             catalog: The ``DataCatalog`` from which to fetch data.
             hook_manager: The ``PluginManager`` to activate hooks.
-            session_id: The id of the session.
+            run_id: The id of the session.
 
         Raises:
             Exception: in case of any downstream node failure.
@@ -141,7 +144,7 @@ class SequentialChecker(AbstractRunner):
             try:
                 self.backtrack_if_needed(pipeline, node)
                 self.check_node(node)
-                # run_node(node, catalog, hook_manager, self._is_async, session_id)
+                # run_node(node, catalog, hook_manager, self._is_async, run_id)
                 done_nodes.add(node)
             except Exception:
                 self._suggest_resume_scenario(pipeline, done_nodes, catalog)
@@ -222,3 +225,7 @@ class SequentialChecker(AbstractRunner):
         else:
             node.check(types)
             return
+        
+    def _get_executor(self, max_workers):
+        """Abstract method in the base class"""
+        return None

@@ -3,7 +3,7 @@ This is a boilerplate pipeline
 generated using Kedro 0.18.8
 """
 
-from kedro.pipeline import Pipeline, pipeline
+from kedro.pipeline import Pipeline
 from kedro_umbrella import coder, processor, trainer
 from kedro_umbrella.library import *
 
@@ -12,7 +12,7 @@ from kedro_umbrella.library import *
 # dis => longer pipeline
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
+    return Pipeline(
         [
             # TRAINING PIPELINE
             processor(
