@@ -2,11 +2,28 @@
 install:
 	pip install --extra-index-url https://download.pytorch.org/whl/cpu .
 
+install-edit:
+	# compat to find pkg easily in vscode/pylance
+	pip install -e . \
+		--config-settings editable_mode=compat \
+		--extra-index-url https://download.pytorch.org/whl/cpu
+
 build:
 	python -m build
 
 lint:
 	pre-commit run --files ./kedro_umbrella/* --hook-stage manual $(hook)
+
+ruff-check:
+	ruff check .
+
+ruff-format:
+	ruff format .
+
+ruff-fix:
+	ruff check --fix .
+
+ruff: ruff-fix ruff-format
 
 unit-tests:
 	pytest tests/

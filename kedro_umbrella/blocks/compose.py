@@ -1,11 +1,11 @@
-"""This module allow to create Composer nodes as part of Kedro pipelines.
-"""
+"""This module allow to create Composer nodes as part of Kedro pipelines."""
 
 from typing import Any, Callable, Iterable
 
 from kedro.pipeline.node import Node
-from kedro_umbrella.types import *
 from kedro.pipeline.pipeline import _is_parameter
+
+from kedro_umbrella.types import FunctionType, TypeCatalog
 
 
 class ComposedFunction:
@@ -21,12 +21,13 @@ class ComposedFunction:
             result = function(result)
         return result
 
+
 def the_composer(*functions: Callable) -> Callable:
     return ComposedFunction(*functions)
 
+
 class Composer(Node):
-    """``Composer`` is an extension of Node to compose function 
-    """
+    """``Composer`` is an extension of Node to compose function"""
 
     def __init__(
         self,
@@ -38,7 +39,7 @@ class Composer(Node):
         confirms: str | list[str] | None = None,
         namespace: str = None,
     ):
-        """Create a Composer in the pipeline by providing the list of functions to be composed. 
+        """Create a Composer in the pipeline by providing the list of functions to be composed.
         A Composer will generate a new function that performs the composition of all the input functions by calling them in the passed order.
 
         Example:
@@ -56,10 +57,10 @@ class Composer(Node):
             For typing, we need to check:
                 - #inputs(f2) == #outputs(f1) # same with all subsequent
                 - all inputs are functions
-            
+
         Args:
             inputs: The functions to be used as input
-            outputs: The composed function 
+            outputs: The composed function
             operator: The composition operator
             name: Optional Composer name to be used when displaying the Composer in
                 logs or any other visualisations.
@@ -83,11 +84,10 @@ class Composer(Node):
 
         """
         if not isinstance(inputs, (list, dict)):
-            raise ValueError(f"Invalid input type")
+            raise ValueError("Invalid input type")
         if not isinstance(outputs, str):
             raise ValueError(
-                    f"'outputs' type must be one a String, "
-                    f"not '{type(outputs).__name__}'."
+                f"'outputs' type must be one a String, not '{type(outputs).__name__}'."
             )
         if len(inputs) < 2:
             raise ValueError(f"At least two inputs required, found {len(inputs)}")
@@ -156,8 +156,7 @@ class Composer(Node):
 
         if not isinstance(inputs, dict):
             raise ValueError(
-                f"Composer.run() expects a dictionary, "
-                f"but got {type(inputs)} instead"
+                f"Composer.run() expects a dictionary, but got {type(inputs)} instead"
             )
 
         try:
@@ -190,14 +189,16 @@ class Composer(Node):
                 if _is_parameter(input):
                     continue
                 the_type = types[input]
-                if not type(the_type) is FunctionType:
-                    warn(f"In Composer {self}: Function expected as {msg} input '{input}'")
+                if type(the_type) is not FunctionType:
+                    warn(
+                        f"In Composer {self}: Function expected as {msg} input '{input}'"
+                    )
                 in_types.append(the_type)
             return in_types
 
         self._logger.info("Checking Composer: %s", self)
         inputs = check_input(self.inputs)
-        # Result is F = f1 -> f2 -> f3 
+        # Result is F = f1 -> f2 -> f3
         # input of required by f1 and output as f3
         in_type = inputs[0]
         out_type = inputs[-1]
@@ -214,7 +215,7 @@ def composer(
     confirms: str | list[str] | None = None,
     namespace: str = None,
 ) -> Composer:
-    """Create a Composer in the pipeline by providing the list of functions to be composed. 
+    """Create a Composer in the pipeline by providing the list of functions to be composed.
     A Composer will generate a new function that performs the composition of all the input functions by calling them in the passed order.
 
     Example:
@@ -232,10 +233,10 @@ def composer(
         For typing, we need to check:
             - #inputs(f2) == #outputs(f1) # same with all subsequent
             - all inputs are functions
-        
+
     Args:
         inputs: The functions to be used as input
-        outputs: The composed function 
+        outputs: The composed function
         operator: The composition operator
         name: Optional Composer name to be used when displaying the Composer in
             logs or any other visualisations.

@@ -3,14 +3,16 @@
 import pytest
 
 from kedro_umbrella import coder, processor, trainer
-from kedro_umbrella.types import TypeCatalog, DataType, FunctionType
+from kedro_umbrella.types import TypeCatalog
 
 
 def one_in_one_out(arg):
     return arg
 
+
 def zero_in_one_out():
     return 42
+
 
 def one_in_dict_out(arg):
     return {"ret": arg}
@@ -39,11 +41,14 @@ def train_one_func_in3(in1, in2, in3):
 def code_two_func():
     return one_in_one_out, one_in_one_out
 
+
 def code_two_func_in1(in1):
     return one_in_one_out, one_in_one_out
 
+
 def code_two_func_in2(in1, in2):
     return one_in_one_out, one_in_one_out
+
 
 def code_two_func_in3(in1, in2, in3):
     return one_in_one_out, one_in_one_out
@@ -55,6 +60,7 @@ def code_three_func(in1):
 
 def code_no_func(in1):
     return 42
+
 
 def train_no_func(in1, in2):
     return in1 + in2
@@ -73,11 +79,15 @@ def test_code_proc():
     assert out["func1"] is one_in_one_out
     assert out["func2"] is one_in_one_out
     # two in - two out
-    out = coder(code_two_func_in2, ["in1", "in2"], ["func1", "func2"]).run({"in1": 1, "in2": 2})
+    out = coder(code_two_func_in2, ["in1", "in2"], ["func1", "func2"]).run(
+        {"in1": 1, "in2": 2}
+    )
     assert out["func1"] is one_in_one_out
     assert out["func2"] is one_in_one_out
     # define with dict
-    out = coder(code_one_func_in2, {"in1": "n1", "in2": "n2"}, "func").run({"n1": 1, "n2": 2})
+    out = coder(code_one_func_in2, {"in1": "n1", "in2": "n2"}, "func").run(
+        {"n1": 1, "n2": 2}
+    )
     assert out["func"] is one_in_one_out
 
     # copy coder
@@ -146,7 +156,6 @@ def test_processor():
     assert out["dsOut"] == 42
     assert the_input == orig_input
 
-
     # === INVALID CASES ===
     # no input
     pattern = r"Invalid Processor definition: it must have some 'inputs'."
@@ -168,7 +177,7 @@ def test_processor():
     with pytest.raises(AssertionError, match=pattern):
         out = processor(["my_func", "dsIn"], "dsOut")
         out.run({})
-    
+
     # mismatch in input size
     pattern = r"Inputs of 'one_in_one_out' function expected \['arg'\], but got \['dsIn', 'dsIn1'\]"
     the_input = {"my_func": one_in_one_out, "dsIn": 42, "dsIn1": 29}
@@ -179,22 +188,27 @@ def test_processor():
     # invalid processor name
     pattern = r"Invalid Processor definition: '42' is not a valid processor name."
     with pytest.raises(ValueError, match=pattern):
-        out = processor(["my_func", "dsIn"], "dsOut", name = 42)
+        out = processor(["my_func", "dsIn"], "dsOut", name=42)
 
     # input is not function
     the_input = {"my_func": 40, "dsIn": 42}
-    pattern = r"Invalid Processor definition: First 'input' must be a callable, not 'int'."
+    pattern = (
+        r"Invalid Processor definition: First 'input' must be a callable, not 'int'."
+    )
     with pytest.raises(ValueError, match=pattern):
         out = processor(["my_func", "dsIn"], "dsOut").run(the_input)
 
     # run without dict
-    pattern = r"Processor.run\(\) expects a dictionary, but got \<class 'str'\> instead."
+    pattern = (
+        r"Processor.run\(\) expects a dictionary, but got \<class 'str'\> instead."
+    )
     with pytest.raises(ValueError, match=pattern):
         out = processor(["my_func", "dsIn"], "dsOut").run("foo")
 
     # processor with exception
     def raise_exception(arg):
         raise ValueError("Exception raised")
+
     the_input = {"my_func": raise_exception, "dsIn": 42}
     pattern = r"Exception raised"
     with pytest.raises(ValueError, match=pattern):
@@ -207,29 +221,28 @@ def test_train():
     assert out["func"] is one_in_one_out
 
     # three in - one out
-    out = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX = 2).run(
+    out = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX=2).run(
         {"in1": 1, "in2": 2, "in3": 3}
     )
     assert out["func"] is one_in_one_out
 
     # two in - one out with dict
     out = trainer(code_one_func_in2, {"in1": "n1", "in2": "n2"}, "func").run(
-        {"n1": 1, "n2": 2})
+        {"n1": 1, "n2": 2}
+    )
     assert out["func"] is one_in_one_out
 
-
     # copy trainer
-    out1 = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX = 1)
+    out1 = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX=1)
     out2 = out1._copy()
     assert out1 == out2
 
-
     # === INVALID CASES ===
-    # missing input 
+    # missing input
     pattern = r"At least two inputs required, found 1"
     with pytest.raises(ValueError, match=pattern):
         out = trainer(code_one_func_in1, ["in1"], "func")
-    
+
     # input must be list
     pattern = r"Invalid input type"
     with pytest.raises(ValueError, match=pattern):
@@ -239,7 +252,7 @@ def test_train():
     pattern = r"'outputs' type must be one of \[String, List\], not 'NoneType'."
     with pytest.raises(ValueError, match=pattern):
         out = trainer(code_one_func_in2, ["in1", "in2"], None)
-        
+
     # callable output expected
     pattern = r"Trainer expected callable output but got <class 'int'> instead!"
     with pytest.raises(ValueError, match=pattern):
@@ -248,17 +261,19 @@ def test_train():
     # incorrect run call
     pattern = r"Trainer.run\(\) expects a dictionary, but got <class 'list'> instead"
     with pytest.raises(ValueError, match=pattern):
-        out = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX = 2).run(["in1"])
+        out = trainer(train_one_func_in3, ["in1", "in2", "in3"], "func", numX=2).run(
+            ["in1"]
+        )
 
-    # invalid trainer: two many X values 
+    # invalid trainer: two many X values
     pattern = r"numX=2 must be <= 1 \(at least one Y is required\)"
-    with pytest.raises(ValueError, match = pattern):
-        trainer(code_one_func_in2, ["d1", "f2"], "func", numX = 2)
+    with pytest.raises(ValueError, match=pattern):
+        trainer(code_one_func_in2, ["d1", "f2"], "func", numX=2)
 
 
 def test_code_check():
     # COMMON SETUP
-    types : TypeCatalog = TypeCatalog()
+    types: TypeCatalog = TypeCatalog()
     types.add_data("d1")
     types.add_data("d2")
 
@@ -303,7 +318,7 @@ def test_code_check():
 
 def test_train_check():
     # COMMON SETUP
-    types : TypeCatalog = TypeCatalog()
+    types: TypeCatalog = TypeCatalog()
     types.add_data("d1")
     types.add_data("d2")
     types.add_data("d3")
@@ -324,14 +339,14 @@ def test_train_check():
     assert types["f2"].out_type[0] == types["d2"]
 
     # valid trainer, func: (d1, d2) -> (d3)
-    out = trainer(train_one_func_in3, ["d1", "d2", "d3"], "f3", numX = 2).check(types)
+    trainer(train_one_func_in3, ["d1", "d2", "d3"], "f3", numX=2).check(types)
     assert types["f3"].is_function()
     assert types["f3"].in_type[0] == types["d1"]
     assert types["f3"].in_type[1] == types["d2"]
     assert types["f3"].out_type[0] == types["d3"]
 
     # valid trainer, func: (d1) -> (d2, d3)
-    out = trainer(train_one_func_in3, ["d1", "d2", "d3"], "f4", numX = 1).check(types)
+    trainer(train_one_func_in3, ["d1", "d2", "d3"], "f4", numX=1).check(types)
     assert types["f4"].is_function()
     assert types["f4"].in_type[0] == types["d1"]
     assert types["f4"].out_type[0] == types["d2"]
@@ -350,7 +365,7 @@ def test_train_check():
 
 def test_type_print():
     # COMMON SETUP
-    types : TypeCatalog = TypeCatalog()
+    types: TypeCatalog = TypeCatalog()
     types.add_data("d1")
     types.add_data("d2")
     types.add_function("f1", types["d1"], types["d2"])
@@ -359,9 +374,10 @@ def test_type_print():
     assert str(types["d2"]) == "DataType(2)"
     assert str(types["f1"]) == "FunctionType([DataType(1)], [DataType(2)])"
 
+
 def test_process_check():
     # COMMON SETUP
-    types : TypeCatalog = TypeCatalog()
+    types: TypeCatalog = TypeCatalog()
     types.add_data("d1")
     types.add_data("d2")
     types.add_data("d3")
@@ -375,9 +391,9 @@ def test_process_check():
     # zero in - one out
     processor("f0", "d0").check(types)
 
-    # fixed_func w/ params 
-    #p = processor("parameters", "d0", func = one_in_one_out)
-    #p.check(types)
+    # fixed_func w/ params
+    # p = processor("parameters", "d0", func = one_in_one_out)
+    # p.check(types)
 
     # one in - one out
     out = processor(["f1", "d1"], "d9").check(types)
@@ -400,7 +416,7 @@ def test_process_check():
     pattern = r"inconsistent number of inputs, expected 2, got 3"
     with pytest.raises(ValueError, match=pattern):
         out = processor(["f3", "d1", "d2", "d3"], "d10").check(types)
-    
+
     # invalid processor: mismatch in number of input
     pattern = r"inconsistent number of inputs, expected 2, got 1"
     with pytest.raises(ValueError, match=pattern):
@@ -410,12 +426,12 @@ def test_process_check():
     pattern = r"inconsistent number of inputs, expected 1, got 2"
     with pytest.raises(ValueError, match=pattern):
         out = processor(["f1", "d1", "d2"], "d3").check(types)
-    
+
     # invalid processor: mismatch in number of output
     pattern = r"inconsistent number of outputs, expected 1, got 2"
     with pytest.raises(ValueError, match=pattern):
         out = processor(["f1", "d1"], ["d2", "d3"]).check(types)
-    
+
     # invalid processor: mismatch in number of output
     pattern = r"inconsistent number of outputs, expected 2, got 1"
     with pytest.raises(ValueError, match=pattern):
@@ -432,7 +448,7 @@ def test_process_check():
         out = processor(["f1", "f2"], "d1").check(types)
 
     # invalid processor: function and data not compatible
-    pattern = r"function 'f1' and data 'd2' are not compatible" 
+    pattern = r"function 'f1' and data 'd2' are not compatible"
     with pytest.warns(Warning, match=pattern):
         out = processor(["f1", "d2"], "d1")
         out.check(types)
@@ -442,23 +458,26 @@ def test_process_check():
     with pytest.warns(Warning, match=pattern):
         out = processor(["f1", "d1"], "f2").check(types)
 
+
 def test_processor_fixed():
-    # process w/ fixed function 
-    types : TypeCatalog = TypeCatalog()
+    # process w/ fixed function
+    types: TypeCatalog = TypeCatalog()
     types.add_data("X")
     types.add_data("Y")
 
     from kedro_umbrella.library import split_data
+
     X = [1, 2, 3, 4, 5]
     Y = [2, 4, 6, 8, 10]
 
     # run the function
     the_input = {"X": X, "Y": Y, "parameters": {"random_state": 42}}
-    #out = processor("X", "Y", func = split_data).check()
+    # out = processor("X", "Y", func = split_data).check()
     split = processor(
-                    inputs = ["X", "Y", "parameters"],
-                    outputs = ["X_train", "X_test", "Y_train", "Y_test"],
-                    func = split_data)
+        inputs=["X", "Y", "parameters"],
+        outputs=["X_train", "X_test", "Y_train", "Y_test"],
+        func=split_data,
+    )
 
     # check the types
     split.check(types)
@@ -482,10 +501,7 @@ def test_processor_fixed():
     pattern = r"'func' must be a callable, not 'str'"
     with pytest.raises(ValueError, match=pattern):
         split = processor(
-                    inputs = ["X", "Y"],
-                    outputs = ["X_train", "X_test", "Y_train", "Y_test"],
-                    func = "split_data")
-
-
-
-
+            inputs=["X", "Y"],
+            outputs=["X_train", "X_test", "Y_train", "Y_test"],
+            func="split_data",
+        )

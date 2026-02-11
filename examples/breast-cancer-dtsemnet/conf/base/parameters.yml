@@ -1,0 +1,24 @@
+split_data:
+  random_state: 0
+  train_size: 0.8
+
+xform_X: 
+  data_xform: std
+  random_state: 0
+
+trainer:
+  random_state: 0
+  n_attributes: 9
+  n_classes: 2
+
+  max_iter: 50
+  height: 4
+  learning_rate: 0.05
+  lr_scheduler: True
+  lr_scheduler_gamma: 0.9
+  batch_size: 256
+  use_L1: True
+  lamda_L1: 0.01
+
+score:
+  task: classification

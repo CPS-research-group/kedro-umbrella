@@ -1,16 +1,15 @@
-dual_code:
-  data_xform: std_pca
-
 split_data:
   random_state: 0
   train_size: 0.8
 
 xform_X: 
   data_xform: std_pca
+  num_components: 0.999
   random_state: 0
 
 xform_Y:
   data_xform: std_pca
+  num_components: 0.999
   random_state: 0
 
 trainer:

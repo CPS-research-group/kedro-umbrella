@@ -1,0 +1,12 @@
+# Here you can define all your data sets by using simple YAML syntax.
+#
+# Documentation for this file format can be found in "The Data Catalog"
+# Link: https://docs.kedro.org/en/stable/data/data_catalog.html
+
+diagnostic:
+  type: pickle.PickleDataset
+  filepath: data/01_raw/diagnostic.pkl
+
+cancer_type:
+  type: pickle.PickleDataset
+  filepath: data/01_raw/cancer_type.pkl

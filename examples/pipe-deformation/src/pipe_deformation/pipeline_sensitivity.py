@@ -4,12 +4,19 @@ generated using Kedro 0.18.8
 """
 
 from kedro.pipeline import Pipeline
+
 from kedro_umbrella import coder, processor, trainer
-from kedro_umbrella.library import *
+from kedro_umbrella.library import (
+    pytorch_trainer,
+    sensitivity_analysis,
+    split_data,
+    xform_data,
+)
 
 # pro => doesn't need to code the node +- => one still need to think in advance
 # about wanting to output some valid function that can be called further ahead
 # dis => longer pipeline
+
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
@@ -43,11 +50,11 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=pytorch_trainer,
                 name="t_trainer",
                 inputs=["X_train_red", "Y_train_red", "params:t_trainer"],
-                outputs = "model"
+                outputs="model",
             ),
             # # TESTING PIPELINE
             # processor(name = "X_test_red", inputs=["X_xform", "X_test"], outputs="X_test_red"),
-            # processor(name = "Y_pred_red", 
+            # processor(name = "Y_pred_red",
             #           inputs=["infer", "X_test_red"],
             #           outputs="Y_pred_red"),
             # processor(
@@ -59,10 +66,10 @@ def create_pipeline(**kwargs) -> Pipeline:
             #     outputs=["nrmse", "r2"],
             # ),
             processor(
-                func = sensitivity_analysis,
-                name = "sensitivity",
+                func=sensitivity_analysis,
+                name="sensitivity",
                 inputs=["model", "params:sensitivity"],
-                outputs = "top_samples"
-            )
+                outputs="top_samples",
+            ),
         ]
     )

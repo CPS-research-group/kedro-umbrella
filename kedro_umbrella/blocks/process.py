@@ -1,18 +1,17 @@
-"""This module allow to create Processor nodes as part of Kedro pipelines.
-"""
+"""This module allow to create Processor nodes as part of Kedro pipelines."""
 
 import re
-from typing import Any, Iterable, Callable
-
-from kedro.pipeline.node import Node, _to_list, _get_readable_func_name
-from kedro_umbrella.types import *
-from kedro.pipeline.pipeline import _is_parameter
+from typing import Any, Callable, Iterable
 from warnings import warn
 
+from kedro.pipeline.node import Node, _get_readable_func_name, _to_list
+from kedro.pipeline.pipeline import _is_parameter
+
+from kedro_umbrella.types import DataType, FunctionType, TypeCatalog
+
+
 class Processor(Node):
-    """``Processor`` is for typical data processing (including applying functions learned by other boxes). The Processor function is either provided as the first input (as obtained via Coder and Trainer blocks) or is a "fixed (pre-defined) function". 
-    """
-    
+    """``Processor`` is for typical data processing (including applying functions learned by other boxes). The Processor function is either provided as the first input (as obtained via Coder and Trainer blocks) or is a "fixed (pre-defined) function"."""
 
     def __init__(
         self,
@@ -24,7 +23,7 @@ class Processor(Node):
         confirms: str | list[str] | None = None,
         namespace: str = None,
         func: Callable = None,
-        inputs_type: dict [str, str] = None,
+        inputs_type: dict[str, str] = None,
     ):
         """Create a processor in the pipeline. The function to be called is either the first input (from previous Box) or a fixed function provided by 'func'.
         Remaining inputs and/or outputs are the data.
@@ -32,7 +31,7 @@ class Processor(Node):
         Args:
             inputs: The name or the list of the names of variables used as
                 inputs to the function. The __first input__ is special and is
-                the function to be called (from a "Code" or "Trainer"). 
+                the function to be called (from a "Code" or "Trainer").
                 The number of names should match
                 the number of arguments in the definition of the provided
                 function. When dict[str, str] is provided, variable names
@@ -64,10 +63,10 @@ class Processor(Node):
                 it must contain only letters, digits, hyphens, underscores
                 and/or fullstops.
 
-        """ 
+        """
         if not inputs:
             raise ValueError(_process_error_message("it must have some 'inputs'."))
-        
+
         if inputs and not isinstance(inputs, (str, list)):
             raise ValueError(
                 _process_error_message(
@@ -75,7 +74,7 @@ class Processor(Node):
                     f"not '{type(inputs).__name__}'."
                 )
             )
-        
+
         if outputs and not isinstance(outputs, (str, list, dict)):
             raise ValueError(
                 _process_error_message(
@@ -113,18 +112,18 @@ class Processor(Node):
         self._confirms = confirms
         self._param_num = self._count_param()
         self._inputs_type = inputs_type
-    
+
     def _count_param(self):
         # str case
         if isinstance(self._inputs, str) and _is_parameter(self._inputs):
             return 1
         # list case
-        cnt = 0 
+        cnt = 0
         for input in self._inputs:
             if _is_parameter(input):
                 cnt += 1
         return cnt
-    
+
     def __str__(self):
         def _set_to_str(xset):
             return f"[{','.join(xset)}]"
@@ -140,7 +139,7 @@ class Processor(Node):
             f"Processor({self._func_name}, {repr(self._inputs)}, {repr(self._outputs)}, "
             f"{repr(self._name)})"
         )
-    
+
     @property
     def _func_name(self) -> str:
         if not self._fixed_func:
@@ -162,7 +161,7 @@ class Processor(Node):
             "confirms": self._confirms,
             # XXX hacky way to reset _func when fixed function is used
             "func": None if isinstance(self._func, str) else self._func,
-            "inputs_type": self._inputs_type
+            "inputs_type": self._inputs_type,
         }
         params.update(overwrite_params)
         return Processor(**params)
@@ -173,13 +172,13 @@ class Processor(Node):
             return inputs
         if isinstance(inputs, list):
             return inputs[0]
-    
-    @property  
+
+    @property
     def num_inputs(self):
         if self._fixed_func:
             return len(self.inputs) - self._param_num
-        else: 
-            # -1 for fixed function 
+        else:
+            # -1 for fixed function
             return len(self.inputs) - 1 - self._param_num
 
     def run(self, inputs: dict[str, Any]) -> dict[str, Any]:
@@ -214,13 +213,12 @@ class Processor(Node):
         self._logger.info("Running processor: %s", str(self))
         if not isinstance(inputs, dict):
             raise ValueError(
-                f"Processor.run() expects a dictionary, "
-                f"but got {type(inputs)} instead."
+                f"Processor.run() expects a dictionary, but got {type(inputs)} instead."
             )
         outputs = None
         inputs1 = inputs.copy()
         self._func = self.get_real_func(inputs1)
-        self._inputs : list[str] = list(inputs1.keys())
+        self._inputs: list[str] = list(inputs1.keys())
 
         self._validate_inputs(self._func, self._inputs)
         try:
@@ -241,37 +239,40 @@ class Processor(Node):
             raise exc
 
     def add_internal_inputs(self, inputs):
-        '''
+        """
         Add extra name params.
         Include a 'node_name' parameter w/ the node name
-        '''
+        """
+
         def need_node_name():
             if not hasattr(self._func, "__name__"):
                 return False
             if self._func.__name__ in ["score", "sensitivity_analysis"]:
                 return True
             return False
+
         def add_node_name():
             if not need_node_name():
                 return
-            # add parameter if not there 
+            # add parameter if not there
             if not _is_parameter(self._inputs[-1]):
-                self._inputs.append('parameters')
-            
+                self._inputs.append("parameters")
+
             if self._inputs[-1] in inputs:
                 # there are already some user-declared param
                 param = inputs[self._inputs[-1]]
-                param['_node_name'] = self.name
+                param["_node_name"] = self.name
             else:
                 # no user-declared param
-                inputs[self._inputs[-1]] = {'_node_name': self.name}
+                inputs[self._inputs[-1]] = {"_node_name": self.name}
+
         add_node_name()
-            
+
     def get_real_func(self, inputs1):
         # fixed function
         if self._fixed_func:
             return self._func
-        
+
         # function as input
         k = next(iter(inputs1))
         real_func = inputs1.pop(k)
@@ -285,56 +286,63 @@ class Processor(Node):
         return real_func
 
     def check(self, types: TypeCatalog) -> None:
-            self._logger.info("Checking process: %s", self)
-            inputs = self.inputs
-            outputs = self.outputs
+        self._logger.info("Checking process: %s", self)
+        inputs = self.inputs
+        outputs = self.outputs
 
-            in_it = iter(inputs)
-            if self._fixed_func:
-                # fixed function
-                func_name = self._func.__name__
-                make_fixed_type(self, types)
-                func_type = types[func_name]
-                assert type(func_type) is FunctionType
+        in_it = iter(inputs)
+        if self._fixed_func:
+            # fixed function
+            func_name = self._func.__name__
+            make_fixed_type(self, types)
+            func_type = types[func_name]
+            assert type(func_type) is FunctionType
+        else:
+            # non-fixed function: first input is the function
+            func_name = next(in_it)
+            func_type = types[func_name]
+            if type(func_type) is not FunctionType:
+                warn(
+                    f"In process {self}: function expected as first input '{func_name}'"
+                )
+                return
+
+        # ensure consistency func_type with the data
+        if func_type.num_inputs != self.num_inputs:
+            raise ValueError(
+                f"In process {self}: inconsistent number of inputs, "
+                f"expected {func_type.num_inputs}, got {self.num_inputs}"
+            )
+        if func_type.num_outputs != len(outputs):
+            raise ValueError(
+                f"In process {self}: inconsistent number of outputs, "
+                f"expected {func_type.num_outputs}, got {len(outputs)}"
+            )
+
+        # remaining input are data
+        i = 0
+        for in_name in in_it:
+            if _is_parameter(in_name):
+                continue
+            in_type = types[in_name]
+            if type(in_type) is not DataType:
+                warn(f"In process {self}: data expected for input '{in_name}'")
+            if func_type.in_type[i] != in_type:
+                warn(
+                    f"In process {self}: function '{func_name}' and "
+                    f"data '{in_name}' are not compatible."
+                )
+            i += 1
+
+        # outputs: check consistency or propagate type from function
+        for i in range(len(outputs)):
+            if outputs[i] in types:
+                out_type = types[outputs[i]]
+                if func_type.out_type[i] != out_type:
+                    warn(f"In process {self}: inconsistent output type")
             else:
-                # non-fixed function: first input is the function
-                func_name = next(in_it)
-                func_type = types[func_name]
-                if not type(func_type) is FunctionType:
-                    warn(f"In process {self}: function expected as first input '{func_name}'")
-                    return
-            
-            # ensure consistency func_type with the data
-            if func_type.num_inputs != self.num_inputs:
-                raise ValueError(
-                    f"In process {self}: inconsistent number of inputs, "
-                    f"expected {func_type.num_inputs}, got {self.num_inputs}")
-            if func_type.num_outputs != len(outputs):
-                raise ValueError(
-                    f"In process {self}: inconsistent number of outputs, "
-                    f"expected {func_type.num_outputs}, got {len(outputs)}")
-            
-            # remaining input are data
-            i = 0 
-            for in_name in in_it:
-                if _is_parameter(in_name):
-                    continue
-                in_type = types[in_name]
-                if not type(in_type) is DataType:
-                    warn(f"In process {self}: data expected for input '{in_name}'")
-                if func_type.in_type[i] != in_type:
-                    warn(f"In process {self}: function '{func_name}' and "
-                         f"data '{in_name}' are not compatible.")
-                i += 1
-            
-            # outputs: check consistency or propagate type from function
-            for i in range(len(outputs)):
-                if outputs[i] in types:
-                    out_type = types[outputs[i]]
-                    if func_type.out_type[i] != out_type:
-                        warn(f"In process {self}: inconsistent output type")
-                else:
-                    types[outputs[i]] = func_type.out_type[i]
+                types[outputs[i]] = func_type.out_type[i]
+
 
 def _process_error_message(msg) -> str:
     return (
@@ -352,7 +360,7 @@ def processor(
     confirms: str | list[str] | None = None,
     namespace: str = None,
     func: Callable = None,
-    inputs_type: dict [str, str] = None,
+    inputs_type: dict[str, str] = None,
 ) -> Processor:
     """Create a processor in the pipeline. The function to be called is the first input.
     Remaining inputs and/or outputs are the data.
@@ -391,7 +399,7 @@ def processor(
         confirms=confirms,
         namespace=namespace,
         func=func,
-        inputs_type = inputs_type,
+        inputs_type=inputs_type,
     )
 
 
@@ -406,7 +414,10 @@ def make_fixed_type(node: Processor, types: TypeCatalog):
         Y = types.get_or_create(node.inputs[1])
         types.add_function(
             # X, Y -> X_train, X_test, Y_train, Y_test
-            func_name, [X, Y], [X, X, Y, Y])
+            func_name,
+            [X, Y],
+            [X, X, Y, Y],
+        )
         return
     elif func_name == "score":
         # P1 = {Y_test, Y_pred}, P2 = {nrmse}, P3 = {r2}
@@ -418,8 +429,7 @@ def make_fixed_type(node: Processor, types: TypeCatalog):
             warn(f"The type of test ({Y_test}) and prediction ({Y_pred}) do not match")
         nrmse = types.add_data(node.outputs[0])
         r2 = types.add_data(node.outputs[1])
-        types.add_function(
-            func_name, [Y_test, Y_pred], [nrmse, r2])
+        types.add_function(func_name, [Y_test, Y_pred], [nrmse, r2])
         return
     else:
         # simple case where all outputs have a new data type

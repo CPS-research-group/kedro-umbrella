@@ -2,12 +2,20 @@
 data-driven pipelines.
 """
 
-__version__ = "0.0.1"
+__version__ = "0.2.1"
 
-from .code import Coder, coder
-from .process import Processor, processor
-from .train import Trainer, trainer
-from .compose import Composer, composer
+from .blocks.code import Coder, coder
+from .blocks.compose import Composer, composer
+from .blocks.process import Processor, processor
+from .blocks.train import Trainer, trainer
 
-__all__ = ["coder", "processor", "trainer", "composer",
-           "Coder", "Processor", "Trainer", "Composer"]
+__all__ = [
+    "coder",
+    "processor",
+    "trainer",
+    "composer",
+    "Coder",
+    "Processor",
+    "Trainer",
+    "Composer",
+]

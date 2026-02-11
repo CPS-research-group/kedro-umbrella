@@ -1,7 +1,9 @@
-from kedro.pipeline import Pipeline, Node
+from kedro.pipeline import Node, Pipeline
 from kedro_umbrella import coder, processor, trainer
-from kedro_umbrella.library import *
-from .nodes import *
+from kedro_umbrella.library import basic_trainer, score, split_data, xform_data
+
+from .nodes import get_data
+
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
@@ -9,7 +11,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             # Data Retrieval
             Node(
                 func=get_data,
-                inputs = "params:get_data",
+                inputs="params:get_data",
                 outputs=["X", "Y"],
                 name="get_data",
             ),
@@ -34,7 +36,9 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="xform_Y_train",
             ),
             processor(
-                name="reduce_X_train", inputs=["X_train_scaler", "X_train"], outputs="X_train_red"
+                name="reduce_X_train",
+                inputs=["X_train_scaler", "X_train"],
+                outputs="X_train_red",
             ),
             # Model Training
             trainer(
@@ -47,12 +51,12 @@ def create_pipeline(**kwargs) -> Pipeline:
             processor(
                 inputs=["X_train_scaler", "X_test"],
                 outputs="X_test_xform",
-                name="xform_X_test"
+                name="xform_X_test",
             ),
             processor(
                 inputs=["regressor", "X_test_xform"],
                 outputs="Y_pred_xform",
-                name="predict"
+                name="predict",
             ),
             # Evaluation
             processor(
@@ -60,6 +64,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="score",
                 inputs=["Y_test", "Y_pred_xform", "params:score"],
                 outputs=["mse", "r2"],
-            )
+            ),
         ]
     )

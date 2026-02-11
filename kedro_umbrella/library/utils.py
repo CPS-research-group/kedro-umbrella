@@ -1,20 +1,26 @@
 import logging
 import os
+import random
 from typing import Any, Dict, Tuple
-import numpy as np
-import torch
-from sklearn.metrics import root_mean_squared_error, mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+
 import mat73
-import scipy.io as sio
-
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy.io as sio
+import torch
 import yaml
-import os
+from sklearn.metrics import (
+    accuracy_score,
+    mean_squared_error,
+    r2_score,
+    root_mean_squared_error,
+)
+from sklearn.model_selection import train_test_split
 
-DECIMAL_PRECISION = 8 # based on machine precision vals
+DECIMAL_PRECISION = 8  # based on machine precision vals
 
 logger = logging.getLogger(__name__)
+
 
 class ReportDir:
     REPORT_DIR_PREFIX = "data/08_reporting/"
@@ -31,107 +37,143 @@ class ReportDir:
 
 def _round_float(value):
     from decimal import Decimal
+
     dec = round(Decimal(value), DECIMAL_PRECISION)
     return float(dec)
 
-def score(Y_test, Y_pred, parameters: Dict[str, Any] = {}):
+
+def _regression_plot(REPORT_DIR, Y_test, Y_pred):
+    logger.info(
+        f"Generating regression scatter and residual plot "
+        f"'{REPORT_DIR}/actual_vs_pred.png'"
+    )
+    # Scatter plot of actual vs. predicted values
+    plt.figure()
+    plt.scatter(Y_test, Y_pred, alpha=0.5)
+    plt.title("Actual vs. Predicted Values")
+    plt.xlabel("Actual Values")
+    plt.ylabel("Predicted Values")
+    plt.plot(
+        [Y_test.min(), Y_test.max()], [Y_test.min(), Y_test.max()], "k--", lw=4
+    )  # Diagonal line
+    plt.tight_layout()
+    plt.savefig(f"{REPORT_DIR}/actual_vs_pred.png")
+
+    # Residual plot
+    residuals = Y_pred - Y_test
+    plt.figure()
+    plt.scatter(Y_test, residuals, alpha=0.5)
+    plt.title("Residuals vs. Actual Values")
+    plt.xlabel("Actual Values")
+    plt.ylabel("Residuals")
+    plt.tight_layout()
+    plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at 0
+    plt.savefig(f"{REPORT_DIR}/residual_plot.png")
+
+
+def _time_series_plot(REPORT_DIR, Y_test, Y_pred):
+    # Test and pred
+    plt.figure()
+    plt.plot(Y_test, label="Test")
+    plt.plot(Y_pred, label="Prediction")
+    plt.title("Test & predictions")
+    plt.xlabel("Sample")
+    plt.ylabel("Value")
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig(f"{REPORT_DIR}/test_pred.png")
+
+
+def score(Y_test, Y_pred, parameters: Dict[str, Any] = None):
     """
-    Compute and log various regression metrics, generate plots, and save results to files.
-    
-    Args: 
+    Compute and log classification or regression metrics, generate plots, and save results.
+
+    Args:
         Y_test : array-like or torch.Tensor
             The ground truth target values.
         Y_pred : array-like or torch.Tensor
-            The predicted target values.
+            The predicted target values or logits for classification.
         parameters : dict, optional
             Additional parameters for the function. Expected keys:
             - '_node_name': str, required for determining the report directory.
-            - 'plot': str, optional, specifies the type of plot to generate. 
-            Can be 'regression' or 'time_series'.
-    
+            - 'task': str, optional ('classification' or 'regression').
+              If not provided, inferred from Y_pred shape and dtype.
+            - 'plot': str, optional, specifies the type of plot to generate.
+              Can be 'regression' or 'time_series' for regression tasks.
+
     Returns:
-        A tuple containing the normalized root mean squared error (NRMSE) and the R-squared (r2) score.
-    
-    Typing partition: 
+        For classification: float
+            Classification accuracy.
+        For regression: tuple
+            Tuple containing (NRMSE, R-squared).
+
+    Typing partition:
         P1 = {Y_test, Y_pred}
 
     Notes:
-        - Generates and saves regression scatter and residual plots if `parameters['plot']` is 'regression'.
-        - Generates and saves time series plots if `parameters['plot']` is 'time_series'.
-        - Saves the computed metrics (MSE, RMSE, NRMSE, r2) to a YAML file in the report directory.
+        - For classification: Expects Y_pred to be logits (take argmax) or class predictions.
+        - For regression: Generates scatter/residual plots if `parameters['plot']` is 'regression'.
+        - For regression: Generates time series plots if `parameters['plot']` is 'time_series'.
+        - Saves computed metrics to a YAML file in the report directory.
     """
+    report_dir = ReportDir(parameters["_node_name"]).get()
 
-    def _regression_plot(Y_test, Y_pred):
-        logger.info(f"Generating regression scatter and residual plot "
-                    f"'{REPORT_DIR}/actual_vs_pred.png'")
-        # Scatter plot of actual vs. predicted values
-        plt.figure()
-        plt.scatter(Y_test, Y_pred, alpha=0.5)
-        plt.title("Actual vs. Predicted Values")
-        plt.xlabel("Actual Values")
-        plt.ylabel("Predicted Values")
-        plt.plot(
-            [Y_test.min(), Y_test.max()], [Y_test.min(), Y_test.max()], "k--", lw=4
-        )  # Diagonal line
-        plt.tight_layout()
-        plt.savefig(f"{REPORT_DIR}/actual_vs_pred.png")
+    # Convert to numpy if needed
+    Y_test_ = Y_test.detach().cpu().numpy() if isinstance(Y_test, torch.Tensor) else Y_test
+    Y_pred_ = Y_pred.detach().cpu().numpy() if isinstance(Y_pred, torch.Tensor) else Y_pred
 
-        # Residual plot
-        residuals = Y_pred - Y_test
-        plt.figure()
-        plt.scatter(Y_test, residuals, alpha=0.5)
-        plt.title("Residuals vs. Actual Values")
-        plt.xlabel("Actual Values")
-        plt.ylabel("Residuals")
-        plt.tight_layout()
-        plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at 0
-        plt.savefig(f"{REPORT_DIR}/residual_plot.png")
+    # Get task type
+    task = parameters.get("task", "regression")
+    logger.info(f"Task: {task}")
 
-    def _time_series_plot(Y_test, Y_pred):
-        # Test and pred
-        plt.figure()
-        plt.plot(Y_test, label="Test")
-        plt.plot(Y_pred, label="Prediction")
-        plt.title("Test & predictions")
-        plt.xlabel("Sample")
-        plt.ylabel("Value")
-        plt.tight_layout()
-        plt.legend()
-        plt.savefig(f"{REPORT_DIR}/test_pred.png")
+    if task == "classification":
+        # Handle logits: take argmax if needed
+        if Y_pred_.ndim == 2:
+            Y_pred_ = Y_pred_.argmax(axis=1)
 
-    REPORT_DIR = ReportDir(parameters['_node_name']).get()
+        acc = accuracy_score(Y_test_, Y_pred_)
+        logger.info(f"Accuracy = {acc}")
 
-    # compute score values
-    Y_test_ = Y_test.numpy() if isinstance(Y_test, torch.Tensor) else Y_test
-    Y_pred_ = Y_pred.numpy() if isinstance(Y_pred, torch.Tensor) else Y_pred
-    mse = mean_squared_error(Y_test_, Y_pred_)
-    rmse = root_mean_squared_error(Y_test_, Y_pred_)
-    nrmse = rmse / (np.max(Y_test_) - np.min(Y_test_))
-    r2 = r2_score(Y_test_, Y_pred_)
-    logger.info(f"MSE = {mse}, NRMSE = {nrmse}, r2 = {r2}")
+        # Save classification metrics
+        score_dict = {"accuracy": _round_float(acc)}
+        logger.info(f"Saving scores to '{report_dir}/score.yml'")
+        with open(f"{report_dir}/score.yml", "w") as file:
+            yaml.dump(score_dict, file)
+        # TODO big hack --- maybe regression & classif score as separate block
+        return acc, 0
 
-    # dump score YAML
-    score = {
-        "mse": _round_float(mse),
-        "rmse": _round_float(rmse),
-        "nrmse": _round_float(nrmse),
-        "r2": _round_float(r2),
-    }
-    logger.info(f"Saving scores to '{REPORT_DIR}/score.yml'")
-    with open(f"{REPORT_DIR}/score.yml", "w") as file:
-        yaml.dump(score, file)
+    else:  # regression
+        if Y_pred_.ndim == 1:
+            Y_pred_ = Y_pred_.reshape(-1, 1)
 
-    # dump plot
-    if parameters.get("plot", None) == "regression":
-        _regression_plot(Y_test, Y_pred)
-    if parameters.get("plot", None) == "time_series":
-        _time_series_plot(Y_test, Y_pred)
+        mse = mean_squared_error(Y_test_, Y_pred_)
+        rmse = root_mean_squared_error(Y_test_, Y_pred_)
+        nrmse = rmse / (np.max(Y_test_) - np.min(Y_test_))
+        r2 = r2_score(Y_test_, Y_pred_)
+        logger.info(f"MSE = {mse}, NRMSE = {nrmse}, R2 = {r2}")
 
-    return score["nrmse"], score["r2"]
+        # dump score YAML
+        score_dict = {
+            "mse": _round_float(mse),
+            "rmse": _round_float(rmse),
+            "nrmse": _round_float(nrmse),
+            "r2": _round_float(r2),
+        }
+        logger.info(f"Saving scores to '{report_dir}/score.yml'")
+        with open(f"{report_dir}/score.yml", "w") as file:
+            yaml.dump(score_dict, file)
+
+        # dump plot
+        if parameters.get("plot", None) == "regression":
+            _regression_plot(report_dir, Y_test_, Y_pred_)
+        if parameters.get("plot", None) == "time_series":
+            _time_series_plot(report_dir, Y_test_, Y_pred_)
+
+        return score_dict["nrmse"], score_dict["r2"]
 
 
 def load_mat(
-    parameters: Dict[str, Any]
+    parameters: Dict[str, Any],
 ) -> Tuple[np.ndarray | list[np.ndarray], np.ndarray | list[np.ndarray]]:
     """
     Load data from a .mat file.
@@ -200,7 +242,7 @@ def split_data(
             - Y_train (np.ndarray): Training output data.
             - Y_test (np.ndarray): Testing output data.
 
-    Typing partition: 
+    Typing partition:
         P1 = {X, X_train, X_test}; P2 = {Y, Y_train, Y_test}
     """
     # Use provided split time or random state
@@ -231,10 +273,11 @@ def load_device(parameters) -> torch.device:
 
     return device
 
+
 def difference(a, b):
     """
     Calculate the element-wise difference between two arrays.
-    
+
     Parameters:
         a (array-like): The first input array.
         b (array-like): The second input array.
@@ -242,7 +285,19 @@ def difference(a, b):
     Returns:
         numpy.ndarray: The element-wise difference (diff) of the input arrays.
 
-    Typing partition: 
+    Typing partition:
         P1 = {a, b, diff}
     """
     return np.subtract(a, b)
+
+
+def _make_deterministic(random_state):
+    """Make runs deterministic for numpy and torch.
+
+    Sets seeds for numpy, python random, and torch to ensure reproducibility.
+    """
+    torch.manual_seed(random_state)
+    np.random.seed(random_state)
+    random.seed(random_state)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
