@@ -1,24 +1,19 @@
 import logging
-import random
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from kedro_umbrella.library.utils import _make_deterministic
 
 logger = logging.getLogger(__name__)
 
-def _make_deterministic(random_state):
-    torch.manual_seed(random_state)
-    np.random.seed(random_state)
-    random.seed(random_state)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 # Define the neural network architecture
 class Regressor(nn.Module):
     def __init__(self, input_size, hidden_sizes, output_size):
-        super(Regressor, self).__init__()
+        super().__init__()
         self.input_size = input_size
         self.hidden_layers = nn.ModuleList()
         self.hidden_layers.append(nn.Linear(input_size, hidden_sizes[0]))
@@ -29,25 +24,20 @@ class Regressor(nn.Module):
     def forward(self, x):
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(x, dtype=torch.float32)
-    
+
         for layer in self.hidden_layers:
             x = torch.relu(layer(x))
         x = self.output_layer(x)
         return x
-    
+
     def infer(self, x):
         self.train(False)
         with torch.no_grad():
             return self(x).detach().numpy()
-    
 
-    
-    
 
 def pytorch_trainer(
-    X: np.ndarray | torch.Tensor, 
-    Y: np.ndarray | torch.Tensor, 
-    parameters: dict
+    X: np.ndarray | torch.Tensor, Y: np.ndarray | torch.Tensor, parameters: dict
 ) -> torch.nn.Module:
     """
     Trains a PyTorch model using the provided input data and parameters.
@@ -60,24 +50,21 @@ def pytorch_trainer(
             - "hidden_layer_sizes" (tuple, optional): Sizes of hidden layers. Default is (50, 50).
             - "max_iter" (int, optional): Maximum number of training iterations. Default is 50000.
             - "learning_rate_init" (float, optional): Initial learning rate. Default is 0.001.
-    
+
     Returns:
-        torch.nn.Module: Trained PyTorch model with gradients disabled. It can be used to make predictions on the trained model. 
+        torch.nn.Module: Trained PyTorch model with gradients disabled. It can be used to make predictions on the trained model.
     """
 
     # Params
     _make_deterministic(parameters.get("random_state", None))
     hidden_sizes = parameters.get("hidden_layer_sizes", (50, 50))
-    max_iter=parameters.get("max_iter", 50000)
+    max_iter = parameters.get("max_iter", 50000)
     learning_rate = parameters.get("learning_rate_init", 0.001)
 
     # Init model
     model = Regressor(X.shape[1], hidden_sizes, Y.shape[1])
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), 
-                           lr=learning_rate,
-                           weight_decay=0.0001
-                           )
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
     logger.info(f"Training model {model} with parameters: {parameters}")
 
@@ -86,7 +73,7 @@ def pytorch_trainer(
         X = torch.tensor(X, dtype=torch.float32)
     if not isinstance(Y, torch.Tensor):
         Y = torch.tensor(Y, dtype=torch.float32)
-    
+
     # Training loop
     max_iter = max_iter
     model.train(True)
@@ -96,10 +83,10 @@ def pytorch_trainer(
         loss = criterion(outputs, Y)
         loss.backward()
         optimizer.step()
-    
+
         if (epoch + 1) % 1000 == 0:
-            logger.info(f'Epoch [{epoch + 1}/{max_iter}], Loss: {loss.item():.4f}')
-    
+            logger.info(f"Epoch [{epoch + 1}/{max_iter}], Loss: {loss.item():.4f}")
+
     model.train(False)
     # Disable gradients for the entire model
     for param in model.parameters():

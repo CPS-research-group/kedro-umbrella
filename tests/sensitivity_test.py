@@ -1,14 +1,15 @@
-from kedro_umbrella.library import *
 import numpy as np
+
+from kedro_umbrella.library import difference_metric
 
 
 def test_difference_metric():
     def do_test(grid, ex_classif_diff, ex_regr_diff, ex_regr_pos_diff, step=1):
         # Test classification difference metric
         classif_diff = difference_metric(grid, diff_type="classification", step=step)
-        assert np.array_equal(
-            classif_diff[0], ex_classif_diff
-        ), "Classification difference metric failed"
+        assert np.array_equal(classif_diff[0], ex_classif_diff), (
+            "Classification difference metric failed"
+        )
 
         # Test regression difference metric
         diff, diff_pos = difference_metric(grid, diff_type="regression", step=step)
@@ -17,9 +18,9 @@ def test_difference_metric():
         assert grid.shape == shape_grid
 
         assert np.array_equal(diff, ex_regr_diff), "Regression difference metric failed"
-        assert np.array_equal(
-            diff_pos, ex_regr_pos_diff
-        ), "Regression diff position failed"
+        assert np.array_equal(diff_pos, ex_regr_pos_diff), (
+            "Regression diff position failed"
+        )
 
     def test_1():
         # Create a sample grid

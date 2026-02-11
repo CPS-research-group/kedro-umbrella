@@ -2,19 +2,19 @@ from pathlib import PurePosixPath
 from typing import Any, Dict
 
 import fsspec
-import numpy as np
-
+import torch
 from kedro.io import AbstractDataset
 from kedro.io.core import get_filepath_str, get_protocol_and_path
 
 from kedro_umbrella.library.pytorch_train import Regressor
 
-import torch
-
 try:
-    import onnx
+    import onnx  # noqa: F401
 except ImportError as e:
-    raise ImportError("The 'onnx' library is not installed. Please install it to use ONNXModel.") from e
+    raise ImportError(
+        "The 'onnx' library is not installed. Please install it to use ONNXModel."
+    ) from e
+
 
 class ONNXModel(AbstractDataset[Regressor, Regressor]):
     def __init__(self, filepath: str):
@@ -30,7 +30,9 @@ class ONNXModel(AbstractDataset[Regressor, Regressor]):
 
     def _load(self) -> Regressor:
         """Loading from ONNX is not supported in this implementation."""
-        raise NotImplementedError("Loading from ONNX is not supported in this implementation.")
+        raise NotImplementedError(
+            "Loading from ONNX is not supported in this implementation."
+        )
 
     def _save(self, model: Regressor) -> None:
         """Saves a PyTorch model to an ONNX file.
@@ -45,12 +47,7 @@ class ONNXModel(AbstractDataset[Regressor, Regressor]):
         example_input = torch.randn(1, model.input_size)
         save_path = get_filepath_str(self._filepath, self._protocol)
         with self._fs.open(save_path, "wb") as f:
-            torch.onnx.export(
-                model,
-                example_input,
-                f,
-                export_params=True
-            )
+            torch.onnx.export(model, example_input, f, export_params=True)
 
     def _describe(self) -> Dict[str, Any]:
         """Returns a dict that describes the attributes of the dataset."""

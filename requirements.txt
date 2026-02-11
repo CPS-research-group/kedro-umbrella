@@ -9,14 +9,12 @@ scipy==1.15.1
 torch==2.5.1
 
 # Infra libs
-black~=22.0
 click==8.1.8
-flake8>=3.7.9, <5.0
+ruff>=0.8.0
 fsspec==2023.12.2
 h5py==3.12.1
 ipython>=7.31.1, <8.0; python_version < '3.8'
 ipython~=8.10; python_version >= '3.8'
-isort~=5.0
 jupyterlab_server>=2.11.1, <2.16.0
 jupyterlab~=3.0, <3.6.0
 jupyter~=1.0

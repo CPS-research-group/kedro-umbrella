@@ -4,22 +4,24 @@ the pipeline and ensure process/code/train are used consistently.
 
 from collections import Counter
 from itertools import chain
-from typing import Any
 
 from kedro.io import AbstractDataset, DataCatalog, MemoryDataset
 from kedro.pipeline import Pipeline
 from kedro.pipeline.node import Node
+from kedro.pipeline.pipeline import _is_parameter
 from kedro.runner.runner import AbstractRunner
 from pluggy import PluginManager
 
-from kedro_umbrella import Coder, Processor, Trainer
-from kedro_umbrella.types import TypeCatalog, DataType, FunctionType
-from kedro.pipeline.pipeline import _is_parameter
+from kedro_umbrella import Processor
+from kedro_umbrella.types import DataType, FunctionType, TypeCatalog
+
 
 def warn_on_fail(condition, message=""):
     from warnings import warn
+
     if not condition:
         warn(message)
+
 
 class SequentialChecker(AbstractRunner):
     """``SequentialRunner`` is an ``AbstractRunner`` implementation. It can
@@ -27,7 +29,7 @@ class SequentialChecker(AbstractRunner):
     topological sort of provided nodes.
     """
 
-    def __init__(self, types : TypeCatalog, is_async: bool = False):
+    def __init__(self, types: TypeCatalog, is_async: bool = False):
         """Instantiates the runner classs.
 
         Args:
@@ -36,9 +38,13 @@ class SequentialChecker(AbstractRunner):
 
         """
         # check if the types are already serialized
-        self._types : TypeCatalog = types
-        import os; import pickle
-        if os.path.exists("types.pickle") and (os.getenv("UMBRL_LOAD_TYPES") != None):
+        self._types: TypeCatalog = types
+        import os
+        import pickle
+
+        if os.path.exists("types.pickle") and (
+            os.getenv("UMBRL_LOAD_TYPES") is not None
+        ):
             with open("types.pickle", "rb") as f:
                 self._types = pickle.load(f)
 
@@ -135,7 +141,7 @@ class SequentialChecker(AbstractRunner):
             Exception: in case of any downstream node failure.
         """
         import pickle
-        import os
+
         nodes = pipeline.nodes
         done_nodes = set()
 
@@ -165,18 +171,15 @@ class SequentialChecker(AbstractRunner):
         # serialize the types as pickle
         with open("types.pickle", "wb") as f:
             pickle.dump(self._types, f)
-        
-    def backtrack_if_needed(
-            self,
-            pipeline: Pipeline,
-            node: Node
-    ):
-        if type(node) is not Processor: 
+
+    def backtrack_if_needed(self, pipeline: Pipeline, node: Node):
+        if type(node) is not Processor:
             return
         if not node._inputs_type:
             return
         for annot in node._inputs_type.items():
-            cur_name = annot[0]; new_name = annot[1]
+            cur_name = annot[0]
+            new_name = annot[1]
             cur_name_orig_id = self._types[cur_name]
 
             self._types[cur_name] = self._types[new_name]
@@ -192,21 +195,20 @@ class SequentialChecker(AbstractRunner):
                         # with the self._types[new_name]
                         if cur_name_orig_id in type_.out_type:
                             type_.out_type = [
-                                self._types[new_name] 
-                                if t == cur_name_orig_id else t for t in type_.out_type]
+                                self._types[new_name] if t == cur_name_orig_id else t
+                                for t in type_.out_type
+                            ]
                             self._types[out] = type_
                         elif cur_name_orig_id in type_.in_type:
                             type_.in_type = [
-                                self._types[new_name] 
-                                if t == cur_name_orig_id else t for t in type_.in_type]
+                                self._types[new_name] if t == cur_name_orig_id else t
+                                for t in type_.in_type
+                            ]
                             self._types[out] = type_
                     else:
                         self._types[out] = self._types[new_name]
-                        
-    def check_node(
-        self,
-        node: Node
-    ):
+
+    def check_node(self, node: Node):
         types = self._types
 
         if type(node) is Node:
@@ -225,7 +227,7 @@ class SequentialChecker(AbstractRunner):
         else:
             node.check(types)
             return
-        
+
     def _get_executor(self, max_workers):
         """Abstract method in the base class"""
         return None

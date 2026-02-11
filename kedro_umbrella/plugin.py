@@ -1,8 +1,12 @@
 import click
-from kedro.framework.cli.utils import (_config_file_callback,
-                                       _split_load_versions, _split_params,
-                                       env_option, split_node_names,
-                                       split_string)
+from kedro.framework.cli.utils import (
+    _config_file_callback,
+    _split_load_versions,
+    _split_params,
+    env_option,
+    split_node_names,
+    split_string,
+)
 from kedro.framework.session import KedroSession
 
 from kedro_umbrella.checker import SequentialChecker
@@ -144,7 +148,8 @@ def check(
 ):
     """Run the pipeline."""
     from kedro_umbrella.types import TypeCatalog
-    types : TypeCatalog = TypeCatalog()
+
+    types: TypeCatalog = TypeCatalog()
 
     runner_obj = SequentialChecker(types, is_async=is_async)
     tuple_tags = tuple(tags)

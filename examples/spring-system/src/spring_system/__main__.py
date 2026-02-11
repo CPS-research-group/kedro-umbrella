@@ -5,20 +5,21 @@ as `spring-system` and `python -m spring_system`
 import importlib
 import logging.config
 from pathlib import Path
-import yaml
 
+import yaml
 from kedro.framework.cli.utils import KedroCliError, load_entry_points
-from kedro.framework.project import configure_project
 from kedro.framework.context import KedroContext
 from kedro.framework.hooks import _get_catalog
+from kedro.framework.project import configure_project
 
 # Force logging configuration
-with open("conf/base/logging.yml", "r") as f:
+with open("conf/base/logging.yml") as f:
     logging_config = yaml.safe_load(f.read())
     logging.config.dictConfig(logging_config)
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 def _find_run_command(package_name):
     try:
@@ -33,7 +34,7 @@ def _find_run_command(package_name):
             # use run command from installed plugin if it exists
             return run
         # use run command from `kedro.framework.cli.project`
-        from kedro.framework.cli.project import run
+        from kedro.framework.cli.project import run  # noqa: PLC0415
 
         return run
     # fail badly if cli.py exists, but has no `cli` in it
@@ -60,6 +61,7 @@ def main(*args, **kwargs):
 
     # Pass the catalog object to the create_pipeline function
     run(*args, **kwargs, extra_params={"catalog": catalog})
+
 
 if __name__ == "__main__":
     logger.info("Executing __main__.py")

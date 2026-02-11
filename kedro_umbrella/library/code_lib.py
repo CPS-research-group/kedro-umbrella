@@ -1,32 +1,35 @@
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+import torch
 from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 
-import torch
-PCA_RATIO = 0.999
 
 def _code_data(data, parameters):
     process = parameters["data_xform"]
-    random_state = parameters.get("random_state", None)  # Use provided random state or None
-    
+    random_state = parameters.get(
+        "random_state", None
+    )  # Use provided random state or None
+    num_components = parameters.get("num_components", 0.999)
+
     if process == "none":
         # the identity
         model = FunctionTransformer()
     elif process == "std":
         model = StandardScaler(with_mean=False)
     elif process == "pca":
-        model = PCA(n_components=PCA_RATIO, random_state = random_state)
+        model = PCA(n_components=num_components, random_state=random_state)
     elif process == "pca_std":
         model = make_pipeline(
-            PCA(n_components=PCA_RATIO, random_state = random_state), 
-            StandardScaler(with_mean=False)
+            PCA(n_components=num_components, random_state=random_state),
+            StandardScaler(with_mean=False),
         )
     elif process == "std_pca":
         model = make_pipeline(
-            StandardScaler(with_mean=False), 
-            PCA(n_components=PCA_RATIO, random_state=random_state)
+            StandardScaler(with_mean=False),
+            PCA(n_components=num_components, random_state=random_state),
         )
     return model.fit(data)
+
 
 class TorchWrapper:
     def __init__(self, xform):
@@ -37,6 +40,7 @@ class TorchWrapper:
 
     def inverse_transform(self, data):
         return torch.tensor(self.xform.inverse_transform(data), dtype=torch.float32)
+
 
 def xform_data(data, parameters):
     """
@@ -54,6 +58,7 @@ def xform_data(data, parameters):
                 - pca: Principal Component Analysis.
                 - pca_std: PCA followed by standard scaling.
                 - std_pca: Standard scaling followed by PCA.
+            - num_components (float, optional): Variance ratio for PCA components. Defaults to 0.999.
             - random_state (int, optional): Random state for reproducibility. Defaults to None.
     Returns:
         tuple: A tuple containing the transform and inverse_transform functions.
@@ -64,6 +69,7 @@ def xform_data(data, parameters):
         wrapper = TorchWrapper(xform)
         return wrapper.transform, wrapper.inverse_transform
     return xform.transform, xform.inverse_transform
+
 
 def reduce_data(data, parameters):
     # For DesCartesBuilder compatibility, since xform and reduce are different blocks

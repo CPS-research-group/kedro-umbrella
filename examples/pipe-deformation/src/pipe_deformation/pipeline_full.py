@@ -4,8 +4,9 @@ generated using Kedro 0.18.8
 """
 
 from kedro.pipeline import Pipeline, pipeline
+
 from kedro_umbrella import coder, processor, trainer
-from kedro_umbrella.library import *
+from kedro_umbrella.library import basic_trainer, score, split_data, xform_data
 
 # pro => doesn't need to code the node +- => one still need to think in advance
 # about wanting to output some valid function that can be called further ahead
@@ -47,10 +48,19 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="regressor",
             ),
             # TESTING PIPELINE
-            processor(name="f_test_red", inputs=["X_xform", "X_test"], outputs="X_test_red"),
-            processor(name="f_test_pred", inputs=["regressor", "X_test_red"],
-                      outputs="Y_pred_red"),
-            processor(name="f_test_invred", inputs=["Y_inv_xform", "Y_pred_red"], outputs="Y_pred"),
+            processor(
+                name="f_test_red", inputs=["X_xform", "X_test"], outputs="X_test_red"
+            ),
+            processor(
+                name="f_test_pred",
+                inputs=["regressor", "X_test_red"],
+                outputs="Y_pred_red",
+            ),
+            processor(
+                name="f_test_invred",
+                inputs=["Y_inv_xform", "Y_pred_red"],
+                outputs="Y_pred",
+            ),
             processor(
                 func=score,
                 name="score",

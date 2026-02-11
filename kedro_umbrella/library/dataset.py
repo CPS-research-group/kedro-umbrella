@@ -2,9 +2,8 @@ from pathlib import PurePosixPath
 from typing import Any, Dict
 
 import fsspec
-import numpy as np
 import h5py
-
+import numpy as np
 from kedro.io import AbstractDataset
 from kedro.io.core import get_filepath_str, get_protocol_and_path
 
@@ -22,17 +21,16 @@ class H5Dataset(AbstractDataset[np.ndarray, np.ndarray]):
         self._fs = fsspec.filesystem(self._protocol)
 
     def _load(self) -> np.ndarray:
-        """Loads data from the H5 file. 
+        """Loads data from the H5 file.
 
         Returns:
             Data from the H5 file as a numpy array
         """
         load_path = get_filepath_str(self._filepath, self._protocol)
-        return h5py.File(load_path, 'r')
+        return h5py.File(load_path, "r")
 
     def _save(self, data: np.ndarray) -> None:
-        assert 0 
-
+        assert 0
 
     def _describe(self) -> Dict[str, Any]:
         """Returns a dict that describes the attributes of the dataset."""

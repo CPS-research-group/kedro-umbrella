@@ -1,10 +1,11 @@
 import logging
-import torch
-import numpy as np
+
 import captum
 import matplotlib.pyplot as plt
-from .utils import ReportDir
+import numpy as np
+import torch
 
+from .utils import ReportDir
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ DIFF_STEP = 10
 GRID_SIZE = 1000
 REPORT_DIR = "empty"
 
+
 class Result:
     def __init__(self, x1=None, x2=None, y1=None, y2=None) -> None:
         self.x1 = x1 if x1 is not None else np.array([])
@@ -22,7 +24,7 @@ class Result:
         self.y1 = y1 if y1 is not None else np.array([])
         self.y2 = y2 if y2 is not None else np.array([])
 
-    def extend(self, res: 'Result') -> None:
+    def extend(self, res: "Result") -> None:
         if not isinstance(res, Result):
             raise TypeError("Expected res to be of type Result")
         self.x1 = res.x1 if self.x1.size == 0 else np.vstack((self.x1, res.x1))
@@ -30,15 +32,12 @@ class Result:
         self.y1 = res.y1 if self.y1.size == 0 else np.vstack((self.y1, res.y1))
         self.y2 = res.y2 if self.y2.size == 0 else np.vstack((self.y2, res.y2))
 
-
     def __str__(self) -> str:
-        return (
-            f"Result(x1={self.x1}, x2={self.x2}, "
-            f"y1={self.y1}, y2={self.y2})"
-        )
+        return f"Result(x1={self.x1}, x2={self.x2}, y1={self.y1}, y2={self.y2})"
 
     def __repr__(self) -> str:
         return self.__str__()
+
 
 class Model:
     nb = 0
@@ -47,9 +46,9 @@ class Model:
         self.model = regressor
         self.X_inv_xform = X_inv_xform
         self.Y_inv_xform = Y_inv_xform
-        self.NUM_FEATURES = params['NUM_FEATURES']
-        self.LOW = np.array(params['LOW'])
-        self.HIGH = np.array(params['HIGH'])
+        self.NUM_FEATURES = params["NUM_FEATURES"]
+        self.LOW = np.array(params["LOW"])
+        self.HIGH = np.array(params["HIGH"])
 
     def __call__(self, x):
         return self.model(x)
@@ -59,10 +58,9 @@ class Model:
         Project back to the original point in the physics model
         """
         if (not self.X_inv_xform) or (not self.Y_inv_xform):
-            return 
+            return
 
         Model.nb += 1
-
 
         logger.info("Projecting back to full space...")
         # Get values in full space
@@ -72,6 +70,7 @@ class Model:
         y2_f = self.Y_inv_xform(y2.reshape(1, -1))
 
         from scipy.io import savemat
+
         savemat(
             f"{REPORT_DIR}/sample_high_sens_{Model.nb}.mat",
             {
@@ -81,6 +80,7 @@ class Model:
                 "y2_f": y2_f,
             },
         )
+
 
 def find_most_sensitive_feature(
     model, low, high, num_features, target=0, method="kernel-shap", num_sample=100
@@ -148,8 +148,6 @@ def compute_query_range(sample, a_min=None, a_max=None, divide=10):
     query_max = np.clip(sample_ + delta, a_min=a_min, a_max=a_max)
     assert np.all(query_min >= a_min) and np.all(query_max <= a_max)
     return query_min, query_max
-
-
 
 
 def plot_difference(feat1, feat2, grid, labels, diff_step=10):
@@ -223,22 +221,23 @@ def init_incr_static_cnt(function):
     nb = function.nb
     return nb
 
+
 def _get_max_diff_values(dataset, diff_grid, diff_pos, out):
     """
     Get the maximum difference values from the dataset and output arrays.
-    Identifies elements with maximum difference and retrieves corresponding 
+    Identifies elements with maximum difference and retrieves corresponding
     values from the dataset and output arrays.
-    
+
     Args:
         dataset (np.ndarray): The original dataset array.
         diff_grid (np.ndarray): The grid of differences.
-        diff_pos (np.ndarray): The positions in the original grid corresponding 
+        diff_pos (np.ndarray): The positions in the original grid corresponding
                                to the differences.
         out (np.ndarray): The output array corresponding to the dataset.
-    
+
     Returns:
-        tuple: A tuple containing the values (x1, x2) from the dataset and 
-               (y1, y2) from the output array at the positions of maximum 
+        tuple: A tuple containing the values (x1, x2) from the dataset and
+               (y1, y2) from the output array at the positions of maximum
                difference.
     """
 
@@ -266,6 +265,7 @@ def _get_max_diff_values(dataset, diff_grid, diff_pos, out):
     )
 
     return x1, x2, y1, y2
+
 
 def eval_sensitive_features_grid(model: Model, attr_div, random_div, top_samples_div):
     """
@@ -337,9 +337,10 @@ def eval_sensitive_features_grid(model: Model, attr_div, random_div, top_samples
         # TODO watch-out these weird reshapes
         x1, x2, y1, y2 = _get_max_diff_values(
             dataset.reshape((GRID_SIZE, GRID_SIZE, model.NUM_FEATURES)),
-            diff_grid, 
-            diff_pos, 
-            out.detach().numpy().reshape((GRID_SIZE, GRID_SIZE, out.shape[1])))
+            diff_grid,
+            diff_pos,
+            out.detach().numpy().reshape((GRID_SIZE, GRID_SIZE, out.shape[1])),
+        )
         res.extend(Result(x1, x2, y1, y2))
 
         model.project_back_to_full_space(x1, x2, y1, y2)
@@ -443,7 +444,7 @@ def set_parameters(params):
     TARGET = params.get("target", TARGET)
     DIFF_STEP = params.get("diff_step", DIFF_STEP)
     GRID_SIZE = params.get("grid_size", GRID_SIZE)
-    REPORT_DIR = ReportDir(params['_node_name']).get()
+    REPORT_DIR = ReportDir(params["_node_name"]).get()
     logger.info("# Parameters")
     logger.info(f"NUM_SAMPLE: {NUM_SAMPLE}")
     logger.info(f"TARGET: {TARGET}")
@@ -451,38 +452,40 @@ def set_parameters(params):
     logger.info(f"GRID_SIZE: {GRID_SIZE}")
     logger.info(f"REPORT_DIR: {REPORT_DIR}")
 
+
 # =================
 #      PUBLIC
 # =================
-def sensitivity_analysis_with_inv(model_: torch.nn.Module, 
-                                  X_inv_xform, Y_inv_xform, parameters: dict):
+def sensitivity_analysis_with_inv(
+    model_: torch.nn.Module, X_inv_xform, Y_inv_xform, parameters: dict
+):
     """
-    Perform sensitivity analysis on a given model with specified parameters. 
-    
+    Perform sensitivity analysis on a given model with specified parameters.
+
     The algorithm aims to find two samples epsilon-close in the input space (x1, x2) that would have significant different in the output space (y1, y2).
 
-    It proceeds as follows: 
+    It proceeds as follows:
         1. Determine top-N important samples using sensitivity analysis method such as Integrated Gradients or KernelShap (from Captum library)
         2. Focus on the most important samples (assume to have high variability) and re-determine sensitivity in a narrow input around each sample
         3. for-each most important sample:
             - find the most sensitivite features
-            - evaluate the model response by varying the two most important features and fixing the remaining features 
-            - compute the Linf metric (absolute distance between points) and save those w/ the highest value 
-    
+            - evaluate the model response by varying the two most important features and fixing the remaining features
+            - compute the Linf metric (absolute distance between points) and save those w/ the highest value
+
     Args:
         model_ (torch.nn.Module): The model to be analyzed.
         X_inv_xform, Y_inv_xform: inverse transforms to project back to full space
         parameters (dict): A dictionary of parameters to set for the model.
 
-    
+
     Returns:
         tuple: A tuple containing the results of the sensitivity analysis:
             - x1: input space sample1
             - x2: input space sample2 (very close to x1).
             - y1: output space sample1 (model output for x1)
             - y2: output space sample2 (model output for x2, most distant from y1)
-    
-    Typing partition: 
+
+    Typing partition:
         P1 = {model}
     """
     set_parameters(parameters)
@@ -493,18 +496,19 @@ def sensitivity_analysis_with_inv(model_: torch.nn.Module,
     attributions, random_tensor, top_samples_idx = calculate_top_samples(model)
 
     # Step 2: Focus around each of the top-N important samples.
-    res = focus_around_top_samples(model, attributions, random_tensor, 
-                             top_samples_idx)
+    res = focus_around_top_samples(model, attributions, random_tensor, top_samples_idx)
 
     return res.x1, res.x2, res.y1, res.y2
+
 
 def sensitivity_analysis(model_: torch.nn.Module, parameters: dict):
     """
     See `sensitivity_analysis_with_inv` documentation.
     """
-    return sensitivity_analysis_with_inv(model_, 
-                                         X_inv_xform=None, Y_inv_xform=None, 
-                                         parameters=parameters)
+    return sensitivity_analysis_with_inv(
+        model_, X_inv_xform=None, Y_inv_xform=None, parameters=parameters
+    )
+
 
 def difference_metric(grid, diff_type="classification", step=10):
     """

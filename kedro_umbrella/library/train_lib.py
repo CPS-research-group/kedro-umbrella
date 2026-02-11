@@ -1,11 +1,13 @@
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
-from sklearn import svm
-import numpy as np
 import logging
 
+import numpy as np
+from sklearn import svm
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.tree import DecisionTreeRegressor
+
 logger = logging.getLogger(__name__)
+
 
 class MLPRegressorUmbrl(MLPRegressor):
     def predict(self, X):
@@ -14,31 +16,19 @@ class MLPRegressorUmbrl(MLPRegressor):
             y_pred = y_pred.reshape(-1, 1)
         return y_pred
 
+
 def _train_model(X, Y, parameters):
     model_type = parameters["model"]
     random_state = parameters.get("random_state", None)
 
     if model_type == "mlp":
         model = MLPRegressorUmbrl(
-            hidden_layer_sizes=parameters.get("hidden_layer_sizes", (50, 50)),
-            max_iter=parameters.get("max_iter", 50000),
-            random_state=random_state,
-        )
-    elif model_type == "mlp1":
-        model = MLPRegressorUmbrl(
-            max_iter=parameters.get("max_iter", 10000),
-            hidden_layer_sizes=parameters.get("hidden_layer_sizes", (100, 100, 100)),
             activation=parameters.get("activation", "relu"),
-            solver=parameters.get("solver", "lbfgs"),
-            random_state=random_state,
-        )
-    elif model_type == "mlp2":
-        model = MLPRegressorUmbrl(
-            max_iter=parameters.get("max_iter", 10000),
             hidden_layer_sizes=parameters.get("hidden_layer_sizes", (50, 50)),
-            activation=parameters.get("activation", "relu"),
             learning_rate_init=parameters.get("learning_rate_init", 0.001),
+            max_iter=parameters.get("max_iter", 10000),
             random_state=random_state,
+            solver=parameters.get("solver", "adam"),
         )
     elif model_type == "lr":
         model = LinearRegression()
@@ -63,7 +53,7 @@ def _train_model(X, Y, parameters):
 
 def basic_trainer(X, Y, parameters):
     """
-    Train a model with given data and parameters. This wraps the Scikit-Learn implementation for access in the Builder. 
+    Train a model with given data and parameters. This wraps the Scikit-Learn implementation for access in the Builder.
 
     Args:
         X (pd.DataFrame or np.ndarray): Feature matrix.
@@ -86,7 +76,7 @@ def basic_trainer(X, Y, parameters):
         - if model == "svr":
             - "C" (float, optional): Regularization parameter for SVR models.
             - "epsilon" (float, optional): Epsilon in the epsilon-SVR model.
-        
+
     Returns:
         callable: A function that can be used to make predictions with the trained model.
     """
