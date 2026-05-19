@@ -154,9 +154,12 @@ def plot_difference(feat1, feat2, grid, labels, diff_step=10):
     nb = init_incr_static_cnt(plot_difference)
 
     plt.figure()
-    plt.contourf(
-        feat1[diff_step:-diff_step], feat2[diff_step:-diff_step], grid, levels=256
+    cntr = plt.contourf(
+        feat1[diff_step:-diff_step], feat2[diff_step:-diff_step], grid, levels=256,
     )
+    # Set rasterization for every color polygon
+    for c in cntr.collections:
+        c.set_rasterized(True)
     plt.axis("scaled")
     plt.colorbar()
     plt.title("Difference plot")
@@ -164,13 +167,17 @@ def plot_difference(feat1, feat2, grid, labels, diff_step=10):
     plt.ylabel(labels[1])
     plt.tight_layout()
     plt.savefig(f"{REPORT_DIR}/difference_{nb}.png")
-
+    plt.savefig(f"{REPORT_DIR}/difference_{nb}.pdf", 
+                format='pdf', dpi=300, bbox_inches='tight')
 
 def plot_landscape(feat1, feat2, out_reshape, labels):
     nb = init_incr_static_cnt(plot_landscape)
 
     plt.figure()
-    plt.contourf(feat1, feat2, out_reshape, levels=256)
+    cntr = plt.contourf(feat1, feat2, out_reshape, levels=256)
+    # Set rasterization for every color polygon
+    for c in cntr.collections:
+        c.set_rasterized(True)
     plt.axis("scaled")
     plt.colorbar()
     plt.title("landscape plot")
@@ -178,6 +185,8 @@ def plot_landscape(feat1, feat2, out_reshape, labels):
     plt.ylabel(labels[1])
     plt.tight_layout()
     plt.savefig(f"{REPORT_DIR}/landscape_{nb}.png")
+    plt.savefig(f"{REPORT_DIR}/landscape_{nb}.pdf", 
+                format='pdf', dpi=300, bbox_inches='tight')
 
 
 def plot_policy(grid_0, grid_1, actions, labels):

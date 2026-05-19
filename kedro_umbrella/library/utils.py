@@ -49,7 +49,7 @@ def _regression_plot(REPORT_DIR, Y_test, Y_pred):
     )
     # Scatter plot of actual vs. predicted values
     plt.figure()
-    plt.scatter(Y_test, Y_pred, alpha=0.5)
+    plt.scatter(Y_test, Y_pred, alpha=0.5, rasterized = True)
     plt.title("Actual vs. Predicted Values")
     plt.xlabel("Actual Values")
     plt.ylabel("Predicted Values")
@@ -58,18 +58,21 @@ def _regression_plot(REPORT_DIR, Y_test, Y_pred):
     )  # Diagonal line
     plt.tight_layout()
     plt.savefig(f"{REPORT_DIR}/actual_vs_pred.png")
+    plt.savefig(f"{REPORT_DIR}/actual_vs_pred.pdf", format='pdf',
+                dpi=300, bbox_inches='tight')
 
     # Residual plot
     residuals = Y_pred - Y_test
     plt.figure()
-    plt.scatter(Y_test, residuals, alpha=0.5)
+    plt.scatter(Y_test, residuals, alpha=0.5, rasterized = True)
     plt.title("Residuals vs. Actual Values")
     plt.xlabel("Actual Values")
     plt.ylabel("Residuals")
     plt.tight_layout()
     plt.axhline(y=0, color="k", linestyle="--")  # Horizontal line at 0
     plt.savefig(f"{REPORT_DIR}/residual_plot.png")
-
+    plt.savefig(f"{REPORT_DIR}/residual_plot.pdf", format='pdf',
+                dpi=300, bbox_inches='tight')
 
 def _time_series_plot(REPORT_DIR, Y_test, Y_pred):
     # Test and pred
